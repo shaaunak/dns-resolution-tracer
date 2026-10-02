@@ -39,10 +39,12 @@ def create_app(tracer: Tracer | None = None) -> FastAPI:
     app.state.tracer = tracer or Tracer()
     app.state.started = time.time()
 
+    import os
+    extra_origins = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173", "http://127.0.0.1:5173",
-                       "http://localhost:3000", "http://127.0.0.1:3000"],
+                       "http://localhost:3000", "http://127.0.0.1:3000"] + extra_origins,
         allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["*"])
 
     @app.exception_handler(RequestValidationError)
