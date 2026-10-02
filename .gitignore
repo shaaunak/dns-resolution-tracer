@@ -1,0 +1,43 @@
+# ---------- macOS ----------
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ---------- Python / backend ----------
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# ---------- Node / frontend ----------
+node_modules/
+dist/
+build/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- Secrets and environment files ----------
+# Real .env files are never uploaded. The safe template .env.example IS uploaded.
+.env
+.env.*
+!.env.example
+
+# ---------- Editors ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------- Logs ----------
+*.log
+logs/
