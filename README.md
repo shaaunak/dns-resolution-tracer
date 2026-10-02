@@ -4,6 +4,15 @@ A Computer Networks course project that shows how a domain name is **really** re
 
 > The cache shown in this app is the application's own in-memory cache. The app never claims anything about the caches of remote DNS servers.
 
+## Live demo
+
+**https://dns-tracer.onrender.com**
+
+The demo runs on Render's free plan, so please keep these points in mind:
+
+- If nobody has used it for about 15 minutes, the backend goes to sleep. The first load after that can take up to a minute.
+- The application cache lives on the backend and is shared by all visitors, so a cache HIT can come from someone else's earlier trace. The cache also resets whenever the backend sleeps or restarts.
+
 ## Features
 
 - **Real iterative resolver** written in Python: starts at the IANA root servers, follows referrals through TLD to authoritative servers, uses glue records, resolves nameserver names itself when there is no glue, follows CNAME chains (with loop and depth protection), uses UDP with TCP fallback, and supports EDNS0.
