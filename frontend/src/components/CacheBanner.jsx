@@ -1,69 +1,72 @@
-function Icon({ kind }) {
-  if (kind === "hit") {
-    return (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M13 2 4 14h6l-1 8 9-12h-6z" />
-      </svg>
-    );
-  }
-  if (kind === "miss") {
-    return (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M6 18 18 6" />
-    </svg>
-  );
-}
-
 export default function CacheBanner({ result, baselineMs }) {
-  const noLookup = result.steps.length === 0; // rejected before any DNS query
+  const noLookup = result.steps.length === 0;
   const hit = result.cache_hit;
   const kind = noLookup ? "none" : hit ? "hit" : "miss";
 
-  const faster =
+  const fasterMultiplier =
     hit && baselineMs && result.total_time_ms > 0 && baselineMs > result.total_time_ms
-      ? baselineMs / result.total_time_ms
+      ? (baselineMs / Math.max(result.total_time_ms, 0.05)).toFixed(0)
       : null;
 
   return (
-    <div className={`cache-banner ${kind}`} role="status">
-      <div className="cache-icon"><Icon kind={kind} /></div>
-      <div className="cache-text">
-        <div className="cache-title">
-          {kind === "hit" && "CACHE HIT"}
-          {kind === "miss" && "CACHE MISS"}
-          {kind === "none" && "NO LOOKUP PERFORMED"}
+    <div className={`cache-telemetry-banner ${kind}`} role="status">
+      <div className="cache-banner-left">
+        <div className="cache-icon-box">
+          {kind === "hit" ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          ) : kind === "miss" ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+            </svg>
+          )}
         </div>
 
-        {kind === "hit" && (
-          <p>Answered from this application's own cache. No DNS query was sent.</p>
-        )}
-        {kind === "miss" && (
-          <p>Not in this application's cache, so real DNS queries were sent over the network.</p>
-        )}
-        {kind === "none" && (
-          <p>The request was rejected before any DNS query was sent.</p>
-        )}
+        <div className="cache-text-group">
+          <div className="cache-status-header">
+            <span className="cache-status-badge">
+              {kind === "hit" && "WARM CACHE HIT"}
+              {kind === "miss" && "COLD RESOLUTION (CACHE MISS)"}
+              {kind === "none" && "PRE-FLIGHT VALIDATION"}
+            </span>
+            {fasterMultiplier && (
+              <span className="speedup-tag">
+                ⚡ ~{fasterMultiplier}x Faster than Network Trace
+              </span>
+            )}
+          </div>
 
-        {kind === "hit" && result.ttl != null && (
-          <p className="cache-meta">Entry expires in {result.ttl} s</p>
-        )}
-        {faster && (
-          <p className="cache-meta">
-            Network trace took {baselineMs.toFixed(1)} ms; this lookup took{" "}
-            {result.total_time_ms.toFixed(1)} ms ({faster.toFixed(0)}x faster)
+          <p className="cache-main-desc">
+            {kind === "hit" &&
+              "Resolved instantly from local in-memory application cache. Zero network packets sent to remote DNS nameservers."}
+            {kind === "miss" &&
+              "Queried live DNS hierarchy iteratively across root, TLD, and authoritative nameservers over UDP port 53."}
+            {kind === "none" &&
+              "Query halted before dispatching network sockets."}
           </p>
-        )}
-        <p className="cache-meta">This is our application's cache, not a DNS server's cache.</p>
+
+          <div className="cache-footer-meta">
+            {kind === "hit" && result.ttl != null && (
+              <span className="cache-meta-item">
+                TTL Expiry: <strong>{result.ttl}s remaining</strong>
+              </span>
+            )}
+            {fasterMultiplier && (
+              <span className="cache-meta-item">
+                Prior Network Trace: <strong>{baselineMs.toFixed(1)} ms</strong> → Cached: <strong>{result.total_time_ms.toFixed(1)} ms</strong>
+              </span>
+            )}
+            <span className="cache-meta-sub">Application LRU Cache Layer</span>
+          </div>
+        </div>
       </div>
     </div>
   );

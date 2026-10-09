@@ -3,137 +3,177 @@
 const ERRORS = {
   INVALID_DOMAIN: {
     tone: "warn",
-    title: "Invalid domain name",
+    title: "Invalid Domain Name Syntax",
     explain:
-      "The text could not be used as a DNS name. Domain names use letters, digits and hyphens, with dots between the parts, for example google.com.",
-    tips: ["Remove http://, paths, spaces and port numbers.", "IP addresses are not domain names."],
+      "The input string is not a valid RFC-compliant DNS hostname. Domain names must use alphanumeric characters, hyphens, and valid dot-separated labels (e.g. google.com).",
+    tips: [
+      "Remove protocol prefixes (http://, https://) and url paths.",
+      "Raw IP addresses cannot be traced directly; enter a domain name.",
+      "Check for accidental trailing slashes or spaces.",
+    ],
   },
   INVALID_RECORD_TYPE: {
     tone: "warn",
-    title: "Unsupported record type",
-    explain: "This tool supports A, AAAA, CNAME, NS, MX and TXT records.",
-    tips: ["Pick a type from the dropdown."],
+    title: "Unsupported Record Type",
+    explain: "This iterative DNS engine supports standard query types: A, AAAA, CNAME, NS, MX, and TXT.",
+    tips: ["Select a supported record type from the dropdown selector."],
   },
   NXDOMAIN: {
     tone: "warn",
-    title: "Domain does not exist (NXDOMAIN)",
+    title: "Domain Does Not Exist (NXDOMAIN — RCODE 3)",
     explain:
-      "A DNS server answered authoritatively that this name, or the target of one of its aliases, does not exist. This is a genuine DNS answer, not a fault in the tool.",
-    tips: ["Check the spelling.", "The domain may simply not be registered."],
+      "An authoritative nameserver confirmed that this domain name (or a canonical name alias target) does not exist in the DNS zone hierarchy.",
+    tips: [
+      "Verify the spelling of the domain name.",
+      "The domain might be expired or not yet registered with a registrar.",
+      "This is a valid authoritative DNS response, not an application error.",
+    ],
   },
   NODATA: {
     tone: "warn",
-    title: "No records of this type",
+    title: "No Records of Requested Type (NODATA)",
     explain: (type) =>
-      `The name exists, but it has no ${type ?? "such"} records. For example, a host that only has an IPv4 address has no AAAA record.`,
-    tips: ["Try a different record type."],
+      `The domain name exists in the zone, but has no active ${type ?? "requested"} resource records configured. For example, an IPv4-only server has no AAAA (IPv6) records.`,
+    tips: [
+      "Try querying for A records instead of AAAA or MX.",
+      "Check if the domain uses a CNAME or TXT record.",
+    ],
   },
   SERVFAIL: {
     tone: "err",
-    title: "Server failure (SERVFAIL)",
+    title: "Nameserver Failure (SERVFAIL — RCODE 2)",
     explain:
-      "A DNS server reported that it could not process the query, for example because of a misconfigured zone. None of the servers tried gave a usable answer.",
-    tips: ["Try again in a moment.", "The domain's own DNS setup may be broken."],
+      "The queried nameserver encountered an internal zone failure, DNSSEC validation failure, or misconfigured zone delegation.",
+    tips: [
+      "The domain's DNS provider may be experiencing an outage.",
+      "DNSSEC keys for this domain might be misconfigured.",
+      "Retry the query to test secondary nameservers.",
+    ],
   },
   REFUSED: {
     tone: "err",
-    title: "Query refused",
-    explain: "A DNS server refused to answer. Some servers only answer certain clients.",
-    tips: ["Try again; another server may answer."],
+    title: "Query Refused (REFUSED — RCODE 5)",
+    explain: "The destination nameserver refused to process this query due to access control or rate-limiting policies.",
+    tips: ["The nameserver might only permit queries from authorized resolver subnets."],
   },
   TIMEOUT: {
     tone: "err",
-    title: "No response (timeout)",
+    title: "Socket Query Timeout",
     explain:
-      "A DNS server did not answer within 3 seconds. The tool tries several servers at each level before giving up.",
+      "A DNS nameserver failed to respond to UDP datagrams within the 3.0s timeout window across all retry attempts.",
     tips: [
-      "Check your internet connection.",
-      "A firewall or network may be blocking DNS traffic (UDP port 53).",
-      "Try again; a single slow server is normal.",
+      "Check your local network connection.",
+      "Ensure outbound UDP/TCP port 53 traffic is not blocked by local firewalls.",
+      "The remote nameserver may be experiencing heavy load or packet loss.",
     ],
   },
   NETWORK_ERROR: {
     tone: "err",
-    title: "Network error",
-    explain: "The DNS query could not be sent from the machine running the backend.",
-    tips: ["Check your internet connection."],
+    title: "Network Socket Error",
+    explain: "The backend could not create or bind an outbound network socket to send DNS queries.",
+    tips: ["Check internet connectivity on the server running the backend."],
   },
   PARSE_ERROR: {
     tone: "err",
-    title: "Unusable reply",
+    title: "DNS Wire Format Parse Error",
     explain:
-      "A server sent a reply this tool could not use, such as a malformed message or an empty reply with no answer and no referral.",
-    tips: ["Try again; this is usually a misbehaving server."],
+      "The nameserver returned an unparseable or corrupted DNS wire message that violated RFC specifications.",
+    tips: ["This usually indicates a non-compliant or buggy DNS server implementation."],
   },
   CNAME_LOOP: {
     tone: "err",
-    title: "CNAME loop",
+    title: "Canonical Name Alias Loop Detected",
     explain:
-      "Aliases (CNAME records) point to each other in a circle, so the name can never resolve. The tool detected the loop and stopped.",
-    tips: ["The domain's DNS records need to be fixed by its owner."],
+      "The domain's CNAME records redirect cyclically (e.g. A -> B -> A). The resolver halted to prevent an infinite recursion loop.",
+    tips: ["The domain owner must fix their circular CNAME DNS configuration."],
   },
   MAX_DEPTH_EXCEEDED: {
     tone: "err",
-    title: "Resolution limit reached",
+    title: "Maximum Traversal Depth Exceeded",
     explain:
-      "The trace hit a safety limit (16 referrals, 8 alias hops, 3 nested nameserver lookups, or 40 queries) and was stopped.",
-    tips: ["This protects against endless chains of redirections."],
+      "The resolution chain exceeded safety limits (16 referrals, 8 CNAME hops, or 40 total queries) and was halted.",
+    tips: ["The domain has an excessively deep or fragmented delegation structure."],
   },
   NO_NAMESERVERS: {
     tone: "err",
-    title: "No usable nameserver",
+    title: "No Reachable Nameservers in Referral",
     explain:
-      "A referral did not provide usable nameserver addresses, and looking the addresses up also failed.",
-    tips: ["Try again; this can be temporary."],
+      "A referral response contained no usable glue IP addresses and resolving the nameserver hostnames failed.",
+    tips: ["Zone delegation contains broken NS records with no corresponding glue."],
   },
   INTERNAL_ERROR: {
     tone: "err",
-    title: "Internal error",
-    explain: "Something unexpected went wrong inside the backend.",
-    tips: ["Look at the terminal running uvicorn for details."],
+    title: "Internal Engine Error",
+    explain: "An unexpected exception occurred during iterative trace processing.",
+    tips: ["Check the backend terminal logs for detailed stack traces."],
   },
   BACKEND_UNREACHABLE: {
     tone: "err",
-    title: "Backend not reachable",
-    explain: "The browser could not contact the API.",
+    title: "Backend Engine Unreachable",
+    explain: "The frontend was unable to connect to the FastAPI backend service.",
     tips: [
-      "Start it: cd ~/dns-tracer/backend && source .venv/bin/activate && uvicorn main:app --reload --port 8000",
-      "Then click the status pill at the top right to re-check.",
+      "Ensure the Python backend is running: cd backend && uvicorn main:app --port 8000",
+      "Click the health indicator pill at the top right to re-check connection.",
     ],
   },
   BAD_RESPONSE: {
     tone: "err",
-    title: "Unexpected response",
-    explain: "The server answered, but not with the JSON this app expects.",
-    tips: ["Make sure the DNS tracer backend is the program running on port 8000."],
+    title: "Unexpected API Response",
+    explain: "The server returned an unparseable response payload instead of the expected JSON trace schema.",
+    tips: ["Verify that the correct FastAPI backend application is running on port 8000."],
   },
 };
 
 export default function ErrorMessage({ code, message, step, recordType }) {
   const info = ERRORS[code] ?? {
     tone: "err",
-    title: "Something went wrong",
-    explain: "The backend reported an error this app does not recognise.",
+    title: "Resolution Diagnostic Error",
+    explain: "The backend returned an unspecified error code.",
     tips: [],
   };
   const explain = typeof info.explain === "function" ? info.explain(recordType) : info.explain;
 
   return (
-    <div className={`error-card ${info.tone}`} role="alert">
-      <div className="error-head">
-        <span className="error-code">{code}</span>
-        <h3>{info.title}</h3>
+    <div className={`error-diagnostic-card tone-${info.tone}`} role="alert">
+      <div className="error-card-top">
+        <div className="error-badge-group">
+          <span className="error-icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </span>
+          <span className="error-code-badge">{code}</span>
+        </div>
+        <h3 className="error-card-title">{info.title}</h3>
       </div>
-      <p>{explain}</p>
-      {message && <p className="error-detail">Details: {message}</p>}
-      {info.tips.length > 0 && (
-        <ul className="error-tips">
-          {info.tips.map((tip) => (
-            <li key={tip}>{tip}</li>
-          ))}
-        </ul>
+
+      <p className="error-explain-text">{explain}</p>
+
+      {message && (
+        <div className="error-detail-box">
+          <span className="detail-label">Wire / Engine Detail:</span>
+          <span className="detail-content font-mono">{message}</span>
+        </div>
       )}
-      {step != null && <small>Reported at step {step}</small>}
+
+      {info.tips.length > 0 && (
+        <div className="error-tips-section">
+          <span className="tips-heading">Troubleshooting Suggestions:</span>
+          <ul className="tips-list">
+            {info.tips.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {step != null && (
+        <div className="error-step-note">
+          Incident halted execution during <strong>Step #{step}</strong> of the resolution path.
+        </div>
+      )}
     </div>
   );
 }

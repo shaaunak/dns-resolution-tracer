@@ -1,85 +1,191 @@
-const TYPE_CLASS = { ROOT: "violet", TLD: "accent", AUTHORITATIVE: "ok", UNKNOWN: "warn" };
-const RESPONSE_CLASS = { ANSWER: "ok", REFERRAL: "accent", CNAME: "violet", NODATA: "warn" };
+import { useState } from "react";
+
+const TYPE_BADGES = {
+  ROOT: { label: "ROOT ZONE (.)", class: "badge-root" },
+  TLD: { label: "TLD REGISTRY", class: "badge-tld" },
+  AUTHORITATIVE: { label: "AUTHORITATIVE ZONE", class: "badge-auth" },
+  UNKNOWN: { label: "DNS NAMESERVER", class: "badge-neutral" },
+};
+
+const RESPONSE_BADGES = {
+  ANSWER: { label: "ANSWER", class: "resp-ok" },
+  REFERRAL: { label: "REFERRAL (DELEGATION)", class: "resp-referral" },
+  CNAME: { label: "CNAME (ALIAS)", class: "resp-cname" },
+  NODATA: { label: "NODATA (NO RECORD)", class: "resp-warn" },
+  NXDOMAIN: { label: "NXDOMAIN", class: "resp-warn" },
+  TIMEOUT: { label: "TIMEOUT", class: "resp-err" },
+  SERVFAIL: { label: "SERVFAIL", class: "resp-err" },
+  REFUSED: { label: "REFUSED", class: "resp-err" },
+};
 
 function formatMs(value) {
-  return value == null ? "-" : `${value.toFixed(1)} ms`;
+  return value == null ? "—" : `${value.toFixed(1)} ms`;
 }
 
-function KV({ label, children }) {
+function DetailSection({ title, count, records, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  if (!records || records.length === 0) return null;
+
   return (
-    <div>
-      <dt className="kv-label">{label}</dt>
-      <dd className="kv-value">{children}</dd>
+    <div className="step-packet-section">
+      <button
+        type="button"
+        className="packet-section-toggle"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
+        <span className="toggle-icon">{open ? "▾" : "▸"}</span>
+        <span className="packet-section-title">{title}</span>
+        <span className="packet-count-pill">{count} {count === 1 ? "record" : "records"}</span>
+      </button>
+
+      {open && (
+        <div className="packet-table-wrapper">
+          <table className="packet-table">
+            <thead>
+              <tr>
+                <th>Record Name</th>
+                <th>Type</th>
+                <th>TTL</th>
+                <th>Target / Data Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((r, i) => (
+                <tr key={`${r.name}-${r.type}-${r.value}-${i}`}>
+                  <td className="font-mono text-muted">{r.name}</td>
+                  <td>
+                    <span className="type-pill-sm">{r.type}</span>
+                  </td>
+                  <td className="font-mono text-amber">{r.ttl}s</td>
+                  <td className="font-mono text-bold text-value">{r.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
 
-function RecordList({ title, records }) {
-  if (!records?.length) return null;
-  return (
-    <details className="step-details">
-      <summary>{title} ({records.length})</summary>
-      <div className="answer-wrap">
-        <table className="records">
-          <thead>
-            <tr><th>Name</th><th>Type</th><th>TTL</th><th>Value</th></tr>
-          </thead>
-          <tbody>
-            {records.map((r, i) => (
-              <tr key={`${r.name}-${r.type}-${r.value}-${i}`}>
-                <td>{r.name}</td>
-                <td>{r.type}</td>
-                <td>{r.ttl}</td>
-                <td>{r.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </details>
-  );
-}
-
-export default function TraceStep({ step }) {
+export default function TraceStep({ step, isHighlighted = false }) {
   const isCache = step.cache_hit;
+  const serverBadge = TYPE_BADGES[step.server_type] || TYPE_BADGES.UNKNOWN;
+  const respBadge = RESPONSE_BADGES[step.response] || { label: step.response, class: "resp-neutral" };
 
   return (
-    <li className={`step${step.sub_resolution ? " sub" : ""}`}>
-      <div className="step-head">
-        <span className="step-num">STEP {step.step}</span>
-        <span className={`chip ${TYPE_CLASS[step.server_type] ?? ""}`}>
-          {isCache ? "APPLICATION CACHE" : step.server_type}
-        </span>
-        {step.sub_resolution && <span className="chip">NAMESERVER LOOKUP</span>}
-        <span className={`chip ${RESPONSE_CLASS[step.response] ?? "err"}`}>{step.response}</span>
-        <span className="step-time">{isCache ? "no network query" : formatMs(step.response_time_ms)}</span>
+    <li
+      id={`step-card-${step.step}`}
+      className={`step-item-card ${step.sub_resolution ? "is-sub-lookup" : ""} ${isHighlighted ? "is-highlighted-step" : ""}`}
+    >
+      {/* Step Header */}
+      <div className="step-card-header">
+        <div className="step-id-group">
+          <span className="step-number-badge">STEP {String(step.step).padStart(2, "0")}</span>
+          <span className={`step-zone-badge ${isCache ? "badge-cache" : serverBadge.class}`}>
+            {isCache ? "LOCAL CACHE" : serverBadge.label}
+          </span>
+          {step.sub_resolution && (
+            <span className="step-glue-badge">GLUE LOOKUP</span>
+          )}
+        </div>
+
+        <div className="step-metrics-group">
+          <span className={`step-response-pill ${respBadge.class}`}>
+            {respBadge.label}
+          </span>
+          <span className="step-latency-badge">
+            {isCache ? "⚡ 0.0 ms (In-Memory)" : `⏱ ${formatMs(step.response_time_ms)}`}
+          </span>
+        </div>
       </div>
 
-      <div className="step-server">
-        <strong>{step.server_name || step.server}</strong>
-        {!isCache && <code>{step.server}</code>}
+      {/* Queried Nameserver Info */}
+      <div className="step-target-bar">
+        <div className="target-server-identity">
+          <span className="target-server-label">Queried Server:</span>
+          <strong className="target-server-name">{step.server_name || step.server}</strong>
+          {!isCache && step.server_name && (
+            <span className="target-server-ip font-mono">({step.server})</span>
+          )}
+        </div>
+
+        <div className="target-protocol-tag">
+          <span className="protocol-chip">
+            {isCache ? "Cache Intercept" : `${step.transport || "UDP"}:53`}
+          </span>
+          {step.tcp_fallback && (
+            <span className="tcp-fallback-chip" title="UDP truncated flag (TC=1) triggered fallback to TCP">
+              TCP Fallback
+            </span>
+          )}
+        </div>
       </div>
 
-      <dl className="step-grid">
-        <KV label="Query">{step.query}</KV>
-        <KV label="Record type">{step.record_type}</KV>
-        <KV label="RCODE">{step.rcode ?? "-"}</KV>
-        <KV label="Authoritative">
-          {step.authoritative == null ? "-" : step.authoritative ? "yes" : "no"}
-        </KV>
-        <KV label="TTL">{step.ttl == null ? "-" : `${step.ttl} s`}</KV>
-        <KV label="Transport">
-          {isCache ? "n/a (no network)" : step.transport}
-          {!isCache && step.tcp_fallback ? " (TCP fallback)" : ""}
-        </KV>
-        <KV label="Application cache">{step.cache_hit ? "HIT" : "MISS"}</KV>
-      </dl>
+      {/* Protocol Parameters Grid */}
+      <div className="step-kv-grid">
+        <div className="kv-box">
+          <span className="kv-key">Query Hostname</span>
+          <span className="kv-val font-mono">{step.query}</span>
+        </div>
+        <div className="kv-box">
+          <span className="kv-key">Query Type</span>
+          <span className="kv-val font-mono text-accent">{step.record_type}</span>
+        </div>
+        <div className="kv-box">
+          <span className="kv-key">RCODE</span>
+          <span className="kv-val font-mono">{step.rcode ?? "NOERROR"}</span>
+        </div>
+        <div className="kv-box">
+          <span className="kv-key">Authoritative (AA)</span>
+          <span className={`kv-val ${step.authoritative ? "text-emerald" : "text-muted"}`}>
+            {step.authoritative == null ? "—" : step.authoritative ? "True (Zone Owner)" : "False (Referral)"}
+          </span>
+        </div>
+        <div className="kv-box">
+          <span className="kv-key">Min TTL</span>
+          <span className="kv-val font-mono text-amber">
+            {step.ttl == null ? "—" : `${step.ttl}s`}
+          </span>
+        </div>
+        <div className="kv-box">
+          <span className="kv-key">Cache Status</span>
+          <span className={`kv-val ${step.cache_hit ? "text-emerald" : "text-muted"}`}>
+            {step.cache_hit ? "HIT" : "MISS"}
+          </span>
+        </div>
+      </div>
 
-      {step.note && <p className="step-note">{step.note}</p>}
+      {/* Educational / Context Note */}
+      {step.note && (
+        <div className="step-explanation-box">
+          <span className="explanation-icon">💡</span>
+          <p className="explanation-text">{step.note}</p>
+        </div>
+      )}
 
-      <RecordList title="Answer records" records={step.records} />
-      <RecordList title="Authority records" records={step.authority} />
-      <RecordList title="Additional records (glue)" records={step.additional} />
+      {/* Detailed DNS Record Sections */}
+      <div className="step-sections-wrapper">
+        <DetailSection
+          title="Answer Records (ANCOUNT)"
+          count={step.records?.length || 0}
+          records={step.records}
+          defaultOpen={Boolean(step.records?.length)}
+        />
+        <DetailSection
+          title="Authority Nameservers (NSCOUNT)"
+          count={step.authority?.length || 0}
+          records={step.authority}
+          defaultOpen={Boolean(step.authority?.length && !step.records?.length)}
+        />
+        <DetailSection
+          title="Additional Glue Records (ARCOUNT)"
+          count={step.additional?.length || 0}
+          records={step.additional}
+          defaultOpen={false}
+        />
+      </div>
     </li>
   );
 }
