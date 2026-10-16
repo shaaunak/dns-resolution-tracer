@@ -1,10 +1,10 @@
-# DNS Resolution Tracer & Visualizer
+# DNS Resolution Tracer & Visualizer (dnstrace)
 
 A Computer Networks engineering project that reveals how a domain name is **iteratively resolved** across the real global DNS hierarchy, step by step.
 
-Given any domain (such as `google.com`) and DNS record type (`A`, `AAAA`, `CNAME`, `NS`, `MX`, `TXT`), the application bypasses local recursive operating system stubs and executes true iterative resolution starting directly from the **IANA Root Hints** down through the **Top-Level Domain (TLD)** nameservers to the **Authoritative** nameservers. It tracks every hop, packet round-trip time, transport protocol, referral, glue record, and application cache state, paired with an interactive 3D celestial visualization and packet flow simulator.
+Given any domain (such as `google.com`) and DNS record type (`A`, `AAAA`, `CNAME`, `NS`, `MX`, `TXT`), the application bypasses local recursive operating system stubs and executes true iterative resolution starting directly from the **IANA Root Hints** down through the **Top-Level Domain (TLD)** nameservers to the **Authoritative** nameservers. It tracks every hop, packet round-trip time, transport protocol, referral, glue record, and application cache state, paired with an interactive 3D tiered celestial visualization and step-by-step wire ledger.
 
-> **Note on Caching**: The cache visualized in this application is the application's own in-memory TTL-aware cache. The resolver queries authoritative infrastructure directly and does not infer external third-party intermediate caches.
+> **Note on Caching**: The cache visualized in this application is the application's own in-memory TTL-aware cache (`key = domain + record_type`). The resolver queries authoritative infrastructure directly and does not infer external third-party intermediate caches.
 
 ---
 
@@ -13,32 +13,38 @@ Given any domain (such as `google.com`) and DNS record type (`A`, `AAAA`, `CNAME
 ### 1. Real Iterative Resolver Engine
 - **True Iterative Resolution**: Starts at the IANA Root nameservers (`a.root-servers.net` to `m.root-servers.net`), follows referrals through TLD nameservers, and queries the authoritative nameservers for the final answer.
 - **Glue Record Resolution**: Automatically parses and prioritizes IPv4/IPv6 glue records in the `ADDITIONAL` section. When referrals lack glue records, the engine autonomously spawns sub-resolutions to resolve the nameserver's own address before proceeding.
-- **CNAME Chain Following**: Follows CNAME aliases sequentially to their canonical target, equipped with recursion depth limits (`MAX_DEPTH = 10`) and loop detection (`CNAME_LOOP`).
+- **CNAME Chain Following**: Follows CNAME aliases sequentially to their canonical target, equipped with recursion depth limits and loop detection.
 - **Dual Transport Protocols**: Queries over UDP with automatic TCP fallback upon message truncation (`TC=1`).
-- **EDNS0 Support**: Uses Extension Mechanisms for DNS (RFC 6891) with standard 4096-byte buffer sizes.
+- **EDNS0 Support**: Uses Extension Mechanisms for DNS (RFC 6891) with standard **1232-byte** buffer sizes to avoid UDP fragmentation.
 - **Accurate Per-Hop Timing**: High-resolution latency measurement (in milliseconds) for each remote nameserver round trip.
 
-### 2. Interactive 3D Orbital & Blueprint Visualizer
-- **3D Celestial Visualization**: Powered by Three.js and React Three Fiber (`@react-three/fiber`, `@react-three/drei`), rendering a 3D orbital canvas mapping Client → Root Cluster → TLD Cluster → Authoritative Nameservers.
-- **Interactive Inspection**: Orbit, pan, zoom, and hover over specific nameserver nodes to inspect hop metadata, IP addresses, and response latencies in real time.
-- **Swiss Blueprint Aesthetic**: High-contrast, typographic UI design system inspired by Swiss engineering schematics with dark-mode data density.
+### 2. Hard Engine Safety Limits
+To prevent denial-of-service, runaway recursion, or cyclic loops in misconfigured zones, the engine enforces strict guardrails:
+- **Max CNAME Hops**: 8 aliases
+- **Max Referrals**: 16 delegation referrals
+- **Max Nested NS Lookups**: 3 recursion levels for nameserver names without glue
+- **Max Queries per Trace**: 40 queries total budget
+- **Query Timeout**: 3.0 seconds per server attempt
 
-### 3. Interactive DNS Simulator & Educational Primer
-- **Packet Flow Simulator**: Step-through interactive packet simulator allowing students and engineers to visualize each request/response frame sequentially.
-- **Interactive Story Mode (ScrollStory)**: Educational walkthrough explaining the mechanics of root hints, zone delegation, DNS hierarchy, and record types.
-- **Protocol Deep-Dive**: Built-in modal reference explaining RFC standards, header flags (QR, AA, TC, RD, RA, RCODE), and query mechanics.
+### 3. Interactive 3D Tiered Cartography
+- **3D Celestial Visualization**: Powered by Three.js and React Three Fiber (`@react-three/fiber`), rendering a 3D canvas mapping:
+  - **Tier 1 (Top)**: Cluster of 13 IANA root server nodes
+  - **Tier 2 (Middle)**: Ring of 13 `.com` TLD nodes
+  - **Tier 3 (Bottom)**: 4 Authoritative nameserver nodes
+- **Active Trajectory & Travelling Packet**: A curved spline links the exact servers hit during the query, with a traveling packet animating through the hierarchy.
+- **Performance & Fallback**: Lazy-loaded 3D chunk, capped `devicePixelRatio <= 2`, rendering paused when offscreen/hidden, and an architectural blueprint SVG fallback for reduced-motion or environments without WebGL.
 
 ### 4. Application-Level TTL Cache
 - **In-Memory TTL Cache**: Keyed on `(domain, record_type)` with expiration timestamps calculated from record TTLs.
-- **Performance Comparison**: Detects cache **HIT** vs **MISS** and automatically computes speedup metrics (e.g., `48.2x faster` than the previous live network round-trip).
-- **Cache Management**: One-click **CLEAR CACHE** button and dedicated REST endpoint `/api/cache/clear`.
+- **Honest Performance Comparison**: Detects cache **HIT** vs **MISS** and computes speedup metrics (`N x faster`) strictly when a prior live trace for that exact query exists in the active browser session.
+- **Cache Management**: One-click **Clear Cache** button and dedicated REST endpoint `POST /api/cache/clear`.
 
 ### 5. Detailed Step & Record Tables
 - **Full Section Parsing**: Expandable accordions for the `ANSWER`, `AUTHORITY` (NS delegation), and `ADDITIONAL` (glue IP) sections.
-- **Server Role Badging**: Visual tags for `ROOT`, `TLD`, `AUTHORITATIVE`, and `CACHE`.
-- **Latency Breakdown**: Per-hop bar chart comparing query durations across all visited nameservers.
-- **Preset Quick-Tests**: Instant one-click presets for popular configurations (`google.com`, `cloudflare.com`, `bbc.co.uk`, `github.com`, `fake-host.xyz`).
-- **Export Tools**: One-click **COPY JSON** and **COPY SUMMARY** for lab reports and debugging.
+- **Server Role Badging**: Visual tags for `ROOT`, `TLD`, `AUTHORITATIVE`, and `APP CACHE`.
+- **Per-Hop Latency Waterfall**: Comparative horizontal bar chart showing exactly where time went across the resolution path.
+- **Preset Quick-Tests**: Instant one-click presets for popular configurations (`google.com`, `cloudflare.com`, `github.com`, `www.github.com`, `bbc.co.uk`, `nonexistent.xyz`, `bad domain!!`).
+- **Export Tools**: One-click **Copy JSON** and **Copy Summary** for lab reports and debugging.
 
 ### 6. Robust Structured Error Handling
 - Returns structured diagnostic codes without leaking raw stack traces:
@@ -81,9 +87,9 @@ Given any domain (such as `google.com`) and DNS record type (`A`, `AAAA`, `CNAME
 | Layer | Technologies |
 |---|---|
 | **Backend Engine** | Python 3.14+, FastAPI, Uvicorn, dnspython, Pydantic v2 |
-| **Backend Testing** | pytest, pytest-asyncio, httpx (TestClient) |
-| **Frontend UI** | React 19, Vite, Three.js, @react-three/fiber, @react-three/drei |
-| **Styling & Assets** | Plain CSS3 (Swiss blueprint design system, CSS Grid/Flexbox), SVG Icons |
+| **Backend Testing** | pytest, httpx (TestClient) |
+| **Frontend UI** | React 19, Vite, Three.js, @react-three/fiber |
+| **Styling & Design System** | Bordeaux Editorial & Ivory Precision design system (CSS3 Grid/Flexbox, hairlines, Newsreader, Inter, JetBrains Mono) |
 
 ---
 
@@ -97,45 +103,44 @@ dns-tracer/
 │   ├── cache.py             # TTL-aware in-memory application cache
 │   ├── engine/
 │   │   ├── roots.py         # IANA root server addresses (hints)
-│   │   ├── transport.py     # Low-level UDP/TCP socket query transport with EDNS0
+│   │   ├── transport.py     # Low-level UDP/TCP socket query transport with EDNS0 (1232B)
 │   │   ├── validation.py    # RFC domain and record type validation rules
 │   │   ├── records.py       # DNS message parser (Answer, Authority, Additional)
-│   │   ├── resolver.py      # Core iterative resolution algorithm
+│   │   ├── resolver.py      # Core iterative resolution algorithm and guardrail limits
 │   │   └── tracer.py        # Orchestrates the trace and records diagnostic steps
 │   ├── tests/               # 105+ unit and live network integration tests
 │   ├── smoke_step3.py       # Standalone CLI resolution tool
 │   ├── pytest.ini           # Pytest configuration
 │   └── requirements.txt     # Python backend dependencies
 ├── frontend/
-│   ├── index.html           # Single-page HTML entry point
+│   ├── index.html           # Single-page HTML entry point (Newsreader, Inter, JetBrains Mono)
 │   ├── vite.config.js       # Vite bundler configuration
 │   ├── package.json         # Node.js dependencies and build scripts
-│   ├── public/              # Static assets (favicons, manifest)
 │   └── src/
-│       ├── App.jsx          # Main application orchestrator & telemetry polling
-│       ├── main.jsx         # React application bootstrap
-│       ├── services/api.js  # Backend REST API client
-│       ├── constants/       # Root server registry and lookup data
-│       ├── components/      # UI components:
-│       │   ├── Header.jsx              # Navigation and live health status pill
-│       │   ├── SearchBar.jsx           # Domain input, record selector, presets
-│       │   ├── DnsOrbitalCanvas.jsx    # 3D orbital Three.js scene
-│       │   ├── HeroScene.jsx           # 3D interactive hero canvas
-│       │   ├── GlobeScene.jsx          # 3D celestial node globe
-│       │   ├── PathGraph.jsx           # Resolution path flowchart
-│       │   ├── TraceTimeline.jsx       # Resolution steps timeline
-│       │   ├── TraceStep.jsx           # Step card with DNS table accordions
-│       │   ├── ResultCard.jsx          # Final answer card & summary
-│       │   ├── CacheBanner.jsx         # Cache HIT/MISS comparison banner
-│       │   ├── CacheControls.jsx       # Manual cache clear buttons
-│       │   ├── InteractiveSimulator.jsx# Step-by-step packet simulator
-│       │   ├── ScrollStory.jsx         # Guided interactive DNS story
-│       │   ├── TelemetryView.jsx       # Live server telemetry & metrics
-│       │   ├── TimeChart.jsx           # Per-query latency bar chart
-│       │   ├── HistoryList.jsx         # Recent traces session history
-│       │   ├── ProtocolModal.jsx       # RFC protocol inspector modal
-│       │   └── ErrorMessage.jsx        # Structured error alert cards
-│       └── *.css            # Modular styles (index, trace, cache, states)
+│       ├── App.jsx          # Root application component and routing
+│       ├── main.jsx         # React DOM bootstrap
+│       ├── index.css        # Design tokens, variables, typography, and card styles
+│       ├── context/
+│       │   └── RouterContext.jsx  # Zero-dependency path-based router & Link
+│       ├── services/
+│       │   └── api.js       # Backend REST client (getHealth, traceDomain, clearCache)
+│       ├── fixtures/
+│       │   └── realTraceFixture.json # Captured real trace fixture for baseline display
+│       ├── views/
+│       │   ├── LandingPage.jsx   # Hero with 3D tiered visualization and sequence guide
+│       │   ├── TracerPage.jsx    # Interactive query console and horizontal hop graph
+│       │   └── LearnPage.jsx     # Protocol walkthrough and interactive trace replayer
+│       └── components/
+│           ├── Navbar.jsx            # Sticky header with real backend health pill
+│           ├── Footer.jsx            # Footer with RFC specifications and repo links
+│           ├── TieredHeroCanvas.jsx  # Three.js 3D tiered hierarchy cartography
+│           ├── BlueprintPoster.jsx   # SVG blueprint fallback for reduced motion / non-WebGL
+│           ├── HopGraph.jsx          # Centerpiece horizontal traversal topology
+│           ├── SummaryMetrics.jsx    # 4 metrics cards with active TTL countdown
+│           ├── AnswerTable.jsx       # Validated authoritative answer record table
+│           ├── StepLedger.jsx        # Step card accordions with wire header inspect
+│           ├── LatencyWaterfall.jsx  # Per-hop latency bar chart
+│           └── ErrorCard.jsx         # Structured error card for all 13 ErrorCodes
 └── README.md
 ```
 
@@ -209,8 +214,8 @@ Clears all active in-memory cache records.
 **Response (200 OK):**
 ```json
 {
-  "cleared": true,
-  "entries_removed": 3
+  "cleared": 3,
+  "message": "Application DNS cache cleared"
 }
 ```
 
@@ -259,6 +264,37 @@ npm run dev
 
 ---
 
+## How to Demo
+
+Follow this step-by-step sequence to demonstrate the project's core capabilities:
+
+1. **Start Services**: Run the backend on port 8000 and frontend on port 5173. Note the green **Backend connected** health pill in the navbar.
+2. **Explore Landing Page (`/`)**:
+   - Inspect the 3D Tiered Cartography on the right (13 Root nodes, 13 .com TLD nodes, 4 Authoritative nodes).
+   - Review the **Execution Sequence** (Root Hints → TLD Referral → Authoritative Answer → Caching).
+   - Review the **Protocol Disassembly** (Header flags QR=1, AA=1, TC=0, RD=0 iterative, EDNS0 1232 octets).
+3. **Run a Standard Trace (`/trace`)**:
+   - Query `google.com` (Record Type: `A`).
+   - Observe the **Iterative Traversal Topology**: Hop 1 Root → Hop 2 TLD → Hop 3 Authoritative → Final Answer.
+   - Note the **CACHE MISS** indicator with live round-trip latency.
+   - Inspect the **Validated Authoritative Answer** table showing all IPv4 address records.
+   - Expand the **Iterative Query Ledger** to inspect wire headers and Authority/Additional glue records for each hop.
+4. **Demonstrate Cache Acceleration**:
+   - Click the **Trace again (Warm cache)** button for `google.com`.
+   - Observe the **CACHE HIT** banner: resolution time drops to ~4ms, queries sent becomes 0, and the **N x FASTER** comparative speedup is displayed.
+   - Click **Clear Cache** in the console: verify the toast reports cleared entries.
+   - Trace again: verify it returns to a live **CACHE MISS**.
+5. **Demonstrate CNAME Following**:
+   - Click the preset `www.github.com (CNAME)`.
+   - Observe the resolver following the canonical alias chain to `github.com`.
+6. **Demonstrate Negative & Error Outcomes**:
+   - Click preset `nonexistent.xyz (NXDOMAIN)`: observe the authoritative server returning `NXDOMAIN` with friendly diagnostics.
+   - Click preset `bad domain!! (INVALID)`: observe RFC syntax validation error.
+7. **Educational Replay (`/learn`)**:
+   - Open **Protocol Walkthrough**. Step through the real trace replay hop-by-hop with detailed educational explanations.
+
+---
+
 ## Testing & Verification
 
 All automated tests live inside `backend/tests/`.
@@ -285,24 +321,6 @@ Execute a direct CLI trace without opening the browser:
 ```bash
 python smoke_step3.py google.com A
 ```
-
----
-
-## Manual Testing Checklist
-
-1. **Basic Trace**: Trace `google.com` with record type `A`. Verify that the step graph shows `ROOT` → `TLD` → `AUTHORITATIVE`, with a cache **MISS** indicator.
-2. **Cache Verification**: Run the exact same query again. Verify that the cache banner reports a cache **HIT** with an **N x faster** latency comparison.
-3. **Cache Invalidation**: Click the **CLEAR CACHE** button and re-run. Verify it returns to a cache **MISS**.
-4. **Record Types**: Test various record types:
-   - `AAAA` (IPv6): `cloudflare.com`
-   - `MX` (Mail Exchange): `github.com`
-   - `NS` (Name Servers): `bbc.co.uk`
-   - `TXT` (Text / Verification): `google.com`
-5. **CNAME Aliasing**: Trace `www.github.com` or `www.bbc.co.uk` and verify that CNAME referrals are tracked to their canonical targets.
-6. **Error Scenarios**:
-   - Non-existent domain: `thisdoesnotexist999888.com` (expect `NXDOMAIN`)
-   - Syntax validation: `invalid..domain` (expect `INVALID_DOMAIN`)
-7. **3D Visualizer & Simulator**: Toggle the interactive 3D orbital view and packet flow simulator to inspect packet progression.
 
 ---
 

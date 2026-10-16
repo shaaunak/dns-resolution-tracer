@@ -1,49 +1,171 @@
+import React from "react";
+import { Link } from "../context/RouterContext";
+
 export default function Footer() {
   return (
-    <footer className="w-full py-20 px-6 lg:px-16 border-t border-white/[0.06] bg-[#050608]">
-      <div className="max-w-7xl mx-auto flex flex-col gap-16">
-        {/* Large Editorial Headline */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+    <footer
+      style={{
+        borderTop: "1px solid var(--border-hairline)",
+        backgroundColor: "var(--bg-canvas)",
+        padding: "36px 0 28px 0",
+        marginTop: "auto",
+        fontSize: "12px",
+      }}
+    >
+      <div className="layout-container">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "24px",
+            marginBottom: "24px",
+          }}
+        >
+          {/* Brand Info */}
           <div>
-            <div className="text-xs font-mono uppercase tracking-[0.2em] text-[#FF5722] mb-3">
-              Standard Specifications
+            <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginBottom: "6px" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "18px",
+                  fontWeight: 700,
+                  color: "var(--color-primary)",
+                }}
+              >
+                dnstrace
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                Iterative Telemetry Engine
+              </span>
             </div>
-            <h3 className="text-4xl sm:text-6xl font-light text-white tracking-tight">
-              RFC 1034 & <span className="font-serif italic text-white/90">RFC 1035</span>
-            </h3>
+            <p style={{ color: "var(--color-text-muted)", maxWidth: "380px", lineHeight: 1.5 }}>
+              A deterministic DNS visualizer and iterative resolver built for educational transparency and protocol verification.
+            </p>
           </div>
-          <p className="max-w-md text-sm text-[#8A909E] leading-relaxed">
-            Domain Names — Concepts, Facilities, Implementation and Specification.
-            Iterative resolution protocol defined by P. Mockapetris (ISI, 1987).
-          </p>
+
+          {/* Quick Links */}
+          <div style={{ display: "flex", gap: "36px", flexWrap: "wrap" }}>
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: "11px",
+                  color: "var(--color-primary)",
+                  textTransform: "uppercase",
+                  marginBottom: "8px",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                Navigation
+              </div>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <li>
+                  <Link to="/" style={{ color: "var(--color-text-main)", textDecoration: "none" }}>
+                    Overview
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/trace" style={{ color: "var(--color-text-main)", textDecoration: "none" }}>
+                    Tracer Application
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/learn" style={{ color: "var(--color-text-main)", textDecoration: "none" }}>
+                    Protocol Walkthrough
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: "11px",
+                  color: "var(--color-primary)",
+                  textTransform: "uppercase",
+                  marginBottom: "8px",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                Specifications
+              </div>
+              <ul
+                style={{
+                  listStyle: "none",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                }}
+              >
+                <li>
+                  <a
+                    href="https://www.rfc-editor.org/rfc/rfc1034"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "var(--color-text-muted)", textDecoration: "none" }}
+                  >
+                    RFC 1034 (Concepts) ↗
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.rfc-editor.org/rfc/rfc1035"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "var(--color-text-muted)", textDecoration: "none" }}
+                  >
+                    RFC 1035 (Implementation) ↗
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="https://www.rfc-editor.org/rfc/rfc6891"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "var(--color-text-muted)", textDecoration: "none" }}
+                  >
+                    RFC 6891 (EDNS0 1232) ↗
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
 
-        {/* Minimal Information Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-10 border-t border-white/[0.06] text-xs font-mono text-[#8A909E]">
+        {/* Bottom Hairline & Legal */}
+        <div
+          style={{
+            borderTop: "1px solid var(--border-hairline-subtle)",
+            paddingTop: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+            color: "var(--color-text-muted)",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+          }}
+        >
           <div>
-            <div className="text-white font-medium mb-1">Top-Level Infrastructure</div>
-            <p>13 Root Server clusters operated by ICANN, NASA, Verisign, RIPE NCC, WIDE, and US DOD.</p>
+            Built with Python 3.14, FastAPI, dnspython, React 19, and Three.js.
           </div>
-
           <div>
-            <div className="text-white font-medium mb-1">Diagnostic Engine</div>
-            <p>Direct raw socket UDP transport with application-layer TTL preservation and LRU eviction.</p>
+            Iterative mode: RD=0 • Zero OS recursive stub delegation
           </div>
-
-          <div>
-            <div className="text-white font-medium mb-1">Architecture</div>
-            <p>Zero recursive caching shortcuts. Real step-by-step authoritative referral walking.</p>
-          </div>
-        </div>
-
-        {/* Bottom Wordmark Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/[0.04] text-xs font-mono text-[#505562]">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF5722]" />
-            <span className="text-[#8A909E]">DNS·TRACER</span>
-            <span>— Hierarchical Diagnostic Visualizer</span>
-          </div>
-          <div>All queries executed over standard UDP port 53 sockets</div>
         </div>
       </div>
     </footer>

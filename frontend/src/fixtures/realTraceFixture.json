@@ -1,0 +1,155 @@
+{
+  "source": "Captured from a real run",
+  "domain": "google.com",
+  "record_type": "A",
+  "total_time_ms": 440.83,
+  "cache_hit": false,
+  "ttl": 300,
+  "final_answer": [
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.251.106.138"
+    },
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.251.106.100"
+    },
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.251.106.102"
+    },
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.251.106.101"
+    },
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.251.106.139"
+    },
+    {
+      "name": "google.com.",
+      "type": "A",
+      "ttl": 300,
+      "value": "142.251.106.113"
+    }
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "server": "192.203.230.10",
+      "server_name": "e.root-servers.net",
+      "server_type": "ROOT",
+      "query": "google.com",
+      "record_type": "A",
+      "response": "REFERRAL",
+      "rcode": "NOERROR",
+      "authoritative": false,
+      "records": [],
+      "authority": [
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "a.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "b.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "c.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "d.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "e.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "f.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "g.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "h.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "i.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "j.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "k.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "l.gtld-servers.net." },
+        { "name": "com.", "type": "NS", "ttl": 172800, "value": "m.gtld-servers.net." }
+      ],
+      "additional": [
+        { "name": "a.gtld-servers.net.", "type": "A", "ttl": 172800, "value": "192.5.6.30" },
+        { "name": "a.gtld-servers.net.", "type": "AAAA", "ttl": 172800, "value": "2001:503:a83e::2:30" },
+        { "name": "b.gtld-servers.net.", "type": "A", "ttl": 172800, "value": "192.33.14.30" },
+        { "name": "b.gtld-servers.net.", "type": "AAAA", "ttl": 172800, "value": "2001:503:231d::2:30" },
+        { "name": "c.gtld-servers.net.", "type": "A", "ttl": 172800, "value": "192.26.92.30" },
+        { "name": "c.gtld-servers.net.", "type": "AAAA", "ttl": 172800, "value": "2001:503:83eb::30" }
+      ],
+      "response_time_ms": 55.34,
+      "ttl": 172800,
+      "transport": "UDP",
+      "tcp_fallback": false,
+      "cache_hit": false,
+      "sub_resolution": false,
+      "note": "Referral to 'com': 13 nameservers, glue for 13"
+    },
+    {
+      "step": 2,
+      "server": "192.5.6.30",
+      "server_name": "a.gtld-servers.net",
+      "server_type": "TLD",
+      "query": "google.com",
+      "record_type": "A",
+      "response": "REFERRAL",
+      "rcode": "NOERROR",
+      "authoritative": false,
+      "records": [],
+      "authority": [
+        { "name": "google.com.", "type": "NS", "ttl": 172800, "value": "ns2.google.com." },
+        { "name": "google.com.", "type": "NS", "ttl": 172800, "value": "ns1.google.com." },
+        { "name": "google.com.", "type": "NS", "ttl": 172800, "value": "ns3.google.com." },
+        { "name": "google.com.", "type": "NS", "ttl": 172800, "value": "ns4.google.com." }
+      ],
+      "additional": [
+        { "name": "ns2.google.com.", "type": "A", "ttl": 172800, "value": "216.239.34.10" },
+        { "name": "ns2.google.com.", "type": "AAAA", "ttl": 172800, "value": "2001:4860:4802:34::a" },
+        { "name": "ns1.google.com.", "type": "A", "ttl": 172800, "value": "216.239.32.10" },
+        { "name": "ns1.google.com.", "type": "AAAA", "ttl": 172800, "value": "2001:4860:4802:32::a" },
+        { "name": "ns3.google.com.", "type": "A", "ttl": 172800, "value": "216.239.36.10" },
+        { "name": "ns3.google.com.", "type": "AAAA", "ttl": 172800, "value": "2001:4860:4802:36::a" },
+        { "name": "ns4.google.com.", "type": "A", "ttl": 172800, "value": "216.239.38.10" },
+        { "name": "ns4.google.com.", "type": "AAAA", "ttl": 172800, "value": "2001:4860:4802:38::a" }
+      ],
+      "response_time_ms": 346.84,
+      "ttl": 172800,
+      "transport": "UDP",
+      "tcp_fallback": false,
+      "cache_hit": false,
+      "sub_resolution": false,
+      "note": "Referral to 'google.com': 4 nameservers, glue for 4"
+    },
+    {
+      "step": 3,
+      "server": "216.239.34.10",
+      "server_name": "ns2.google.com",
+      "server_type": "AUTHORITATIVE",
+      "query": "google.com",
+      "record_type": "A",
+      "response": "ANSWER",
+      "rcode": "NOERROR",
+      "authoritative": true,
+      "records": [
+        { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.251.106.138" },
+        { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.251.106.100" },
+        { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.251.106.102" },
+        { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.251.106.101" },
+        { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.251.106.139" },
+        { "name": "google.com.", "type": "A", "ttl": 300, "value": "142.251.106.113" }
+      ],
+      "authority": [],
+      "additional": [],
+      "response_time_ms": 38.65,
+      "ttl": 300,
+      "transport": "UDP",
+      "tcp_fallback": false,
+      "cache_hit": false,
+      "sub_resolution": false,
+      "note": null
+    }
+  ],
+  "error": null
+}
+
