@@ -41,3 +41,6 @@ pnpm-debug.log*
 # ---------- Logs ----------
 *.log
 logs/
+
+# ---------- Local Projects ----------
+socket_project/
