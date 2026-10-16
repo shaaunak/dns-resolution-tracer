@@ -2,7 +2,7 @@
 
 A Computer Networks engineering project that reveals how a domain name is **iteratively resolved** across the real global DNS hierarchy, step by step.
 
-Given any domain (such as `google.com`) and DNS record type (`A`, `AAAA`, `CNAME`, `NS`, `MX`, `TXT`), the application bypasses local recursive operating system stubs and executes true iterative resolution starting directly from the **IANA Root Hints** down through the **Top-Level Domain (TLD)** nameservers to the **Authoritative** nameservers. It tracks every hop, packet round-trip time, transport protocol, referral, glue record, and application cache state, paired with an interactive 3D tiered celestial visualization and step-by-step wire ledger.
+Given any domain (such as `google.com`) and DNS record type (`A`, `AAAA`, `CNAME`, `NS`, `MX`, `TXT`), the application bypasses local recursive operating system stubs and executes true iterative resolution starting directly from the **IANA Root Hints** down through the **Top-Level Domain (TLD)** nameservers to the **Authoritative** nameservers. It tracks every hop, packet round-trip time, transport protocol, referral, glue record, and application cache state, paired with an interactive 3D tiered celestial visualization, animated packet flow topology, and step-by-step wire ledger.
 
 > **Note on Caching**: The cache visualized in this application is the application's own in-memory TTL-aware cache (`key = domain + record_type`). The resolver queries authoritative infrastructure directly and does not infer external third-party intermediate caches.
 
@@ -26,27 +26,45 @@ To prevent denial-of-service, runaway recursion, or cyclic loops in misconfigure
 - **Max Queries per Trace**: 40 queries total budget
 - **Query Timeout**: 3.0 seconds per server attempt
 
-### 3. Interactive 3D Tiered Cartography
+### 3. Interactive Traversal Topology & Hop Visualizer
+- **Animated SVG Packet Flow**: Traversal graph featuring dynamic SVG connectors with travelling packet pulses between root, TLD, and authoritative nodes.
+- **Visual Tier Badges & Glyphs**: Color-coded badges for `🌐 ROOT`, `📁 TLD`, `🛡️ AUTHORITATIVE`, and `⚡ APP CACHE`.
+- **Step-by-Step Tour Controls**: `[▶ Play Walkthrough]`, `[← Prev Hop]`, and `[Next Hop →]` buttons with automatic interval playback stepping through the resolution path.
+- **Dedicated Hop Inspector**: Shows server IP, round-trip latency, RCODE, and delegation counts for the active hop.
+- **Toggleable RFC 1035 Wire Flags Drawer**: Inspects `QR`, `AA`, `TC`, `RD`, `RA`, and `RCODE` flags for each hop.
+
+### 4. Interactive 3D Tiered Cartography
 - **3D Celestial Visualization**: Powered by Three.js and React Three Fiber (`@react-three/fiber`), rendering a 3D canvas mapping:
   - **Tier 1 (Top)**: Cluster of 13 IANA root server nodes
   - **Tier 2 (Middle)**: Ring of 13 `.com` TLD nodes
   - **Tier 3 (Bottom)**: 4 Authoritative nameserver nodes
+- **Mouse Parallax Orbit**: Smooth, responsive 3D parallax tilt following cursor motion.
 - **Active Trajectory & Travelling Packet**: A curved spline links the exact servers hit during the query, with a traveling packet animating through the hierarchy.
 - **Performance & Fallback**: Lazy-loaded 3D chunk, capped `devicePixelRatio <= 2`, rendering paused when offscreen/hidden, and an architectural blueprint SVG fallback for reduced-motion or environments without WebGL.
 
-### 4. Application-Level TTL Cache
+### 5. Application-Level TTL Cache
 - **In-Memory TTL Cache**: Keyed on `(domain, record_type)` with expiration timestamps calculated from record TTLs.
+- **Animated SVG TTL Countdown Ring**: Dynamic circular SVG gauge depleting in real-time as cached records count down to expiration.
 - **Honest Performance Comparison**: Detects cache **HIT** vs **MISS** and computes speedup metrics (`N x faster`) strictly when a prior live trace for that exact query exists in the active browser session.
-- **Cache Management**: One-click **Clear Cache** button and dedicated REST endpoint `POST /api/cache/clear`.
+- **Cache Management Controls**:
+  - `[Trace Again (Warm)]`: Re-runs the query to verify backend cache HIT.
+  - `[❄ Cold Trace]`: Clears cache and immediately re-traces cold in one click.
+  - `[Clear Cache]`: Calls `POST /api/cache/clear` returning `{cleared: N, message: "..."}`.
 
-### 5. Detailed Step & Record Tables
-- **Full Section Parsing**: Expandable accordions for the `ANSWER`, `AUTHORITY` (NS delegation), and `ADDITIONAL` (glue IP) sections.
-- **Server Role Badging**: Visual tags for `ROOT`, `TLD`, `AUTHORITATIVE`, and `APP CACHE`.
-- **Per-Hop Latency Waterfall**: Comparative horizontal bar chart showing exactly where time went across the resolution path.
-- **Preset Quick-Tests**: Instant one-click presets for popular configurations (`google.com`, `cloudflare.com`, `github.com`, `www.github.com`, `bbc.co.uk`, `nonexistent.xyz`, `bad domain!!`).
-- **Export Tools**: One-click **Copy JSON** and **Copy Summary** for lab reports and debugging.
+### 6. RFC 1035 Interactive Header Flag Simulator (`/learn`)
+- **Interactive Bitmask Playground**: Toggle individual bits (`QR`, `AA`, `TC`, `RD`, `RA`, `RCODE`) and observe the live 16-bit binary header word and hexadecimal representation (`0x8000`, `0x8180`, etc.).
+- **One-Click Presets**: Pre-configured flags for *Iterative Query (RD=0)*, *Referral Reply*, *Authoritative Answer (AA=1)*, *Truncated Reply (TC=1)*, and *NXDOMAIN (RCODE=3)*.
+- **Trace Replayer**: Stepped interactive walkthrough that replays real live traces from the active session.
 
-### 6. Robust Structured Error Handling
+### 7. Validated Authoritative Records & Export Tools
+- **Live Search & Filter**: Instant client-side filtering for large RRsets by IP, hostname, or record type.
+- **RFC 1035 CLI Equivalent Command**: Displays the exact `dig` command matching the engine's query parameters:
+  ```bash
+  dig +norecurse +edns=0 +bufsize=1232 @<server_ip> <domain> <record_type>
+  ```
+- **One-Click Export**: `[Copy All Records]`, `[Copy dig Command]`, `[Copy JSON]`, and `[Copy Summary]`.
+
+### 8. Robust Structured Error Handling
 - Returns structured diagnostic codes without leaking raw stack traces:
   `INVALID_DOMAIN`, `INVALID_RECORD_TYPE`, `NXDOMAIN`, `NODATA`, `SERVFAIL`, `REFUSED`, `TIMEOUT`, `NETWORK_ERROR`, `PARSE_ERROR`, `CNAME_LOOP`, `MAX_DEPTH_EXCEEDED`, `NO_NAMESERVERS`, `INTERNAL_ERROR`.
 
@@ -129,17 +147,17 @@ dns-tracer/
 │       ├── views/
 │       │   ├── LandingPage.jsx   # Hero with 3D tiered visualization and sequence guide
 │       │   ├── TracerPage.jsx    # Interactive query console and horizontal hop graph
-│       │   └── LearnPage.jsx     # Protocol walkthrough and interactive trace replayer
+│       │   └── LearnPage.jsx     # Protocol walkthrough, flag simulator & trace replayer
 │       └── components/
 │           ├── Navbar.jsx            # Sticky header with real backend health pill
 │           ├── Footer.jsx            # Footer with RFC specifications and repo links
-│           ├── TieredHeroCanvas.jsx  # Three.js 3D tiered hierarchy cartography
+│           ├── TieredHeroCanvas.jsx  # Three.js 3D tiered hierarchy cartography with parallax
 │           ├── BlueprintPoster.jsx   # SVG blueprint fallback for reduced motion / non-WebGL
-│           ├── HopGraph.jsx          # Centerpiece horizontal traversal topology
-│           ├── SummaryMetrics.jsx    # 4 metrics cards with active TTL countdown
-│           ├── AnswerTable.jsx       # Validated authoritative answer record table
+│           ├── HopGraph.jsx          # Centerpiece horizontal traversal topology with animated flow
+│           ├── SummaryMetrics.jsx    # Metrics cards with animated SVG TTL countdown ring
+│           ├── AnswerTable.jsx       # Validated authoritative answer record table with filter
 │           ├── StepLedger.jsx        # Step card accordions with wire header inspect
-│           ├── LatencyWaterfall.jsx  # Per-hop latency bar chart
+│           ├── LatencyWaterfall.jsx  # Per-hop latency bar chart with percentage shares
 │           └── ErrorCard.jsx         # Structured error card for all 13 ErrorCodes
 └── README.md
 ```
@@ -270,28 +288,33 @@ Follow this step-by-step sequence to demonstrate the project's core capabilities
 
 1. **Start Services**: Run the backend on port 8000 and frontend on port 5173. Note the green **Backend connected** health pill in the navbar.
 2. **Explore Landing Page (`/`)**:
-   - Inspect the 3D Tiered Cartography on the right (13 Root nodes, 13 .com TLD nodes, 4 Authoritative nodes).
+   - Move cursor over the 3D Tiered Cartography to observe smooth mouse parallax orbit across the 3 planes.
    - Review the **Execution Sequence** (Root Hints → TLD Referral → Authoritative Answer → Caching).
    - Review the **Protocol Disassembly** (Header flags QR=1, AA=1, TC=0, RD=0 iterative, EDNS0 1232 octets).
 3. **Run a Standard Trace (`/trace`)**:
-   - Query `google.com` (Record Type: `A`).
-   - Observe the **Iterative Traversal Topology**: Hop 1 Root → Hop 2 TLD → Hop 3 Authoritative → Final Answer.
+   - Click preset `google.com (A)` or type a domain.
+   - Watch the active **Wire Telemetry Scanner** in-flight loading animation.
+   - Observe the **Iterative Traversal Topology**: Animated SVG packet lines with glowing directional pulses between hops.
+   - Click `[▶ Play Walkthrough]` to automatically tour through hops.
+   - Click `[Show RFC Flags]` to reveal the exact header bits for each server response.
    - Note the **CACHE MISS** indicator with live round-trip latency.
-   - Inspect the **Validated Authoritative Answer** table showing all IPv4 address records.
-   - Expand the **Iterative Query Ledger** to inspect wire headers and Authority/Additional glue records for each hop.
+   - Inspect the **Validated Authoritative Answer** table showing all IPv4 address records with live record search and `[Copy All Records]`.
+   - Inspect the **RFC 1035 CLI Equivalent** card and copy the exact `dig` command.
 4. **Demonstrate Cache Acceleration**:
-   - Click the **Trace again (Warm cache)** button for `google.com`.
-   - Observe the **CACHE HIT** banner: resolution time drops to ~4ms, queries sent becomes 0, and the **N x FASTER** comparative speedup is displayed.
-   - Click **Clear Cache** in the console: verify the toast reports cleared entries.
-   - Trace again: verify it returns to a live **CACHE MISS**.
+   - Click the **Trace again (Warm)** button for `google.com`.
+   - Observe the **CACHE HIT** banner: resolution time drops to ~0.4ms, queries sent becomes 0, and the **N x FASTER** comparative speedup is displayed.
+   - Watch the animated SVG **RETURNED TTL** countdown ring counting down in real-time.
+   - Click **`[❄ Cold Trace]`**: Watch the cache clear and re-run cold instantly.
 5. **Demonstrate CNAME Following**:
    - Click the preset `www.github.com (CNAME)`.
    - Observe the resolver following the canonical alias chain to `github.com`.
 6. **Demonstrate Negative & Error Outcomes**:
    - Click preset `nonexistent.xyz (NXDOMAIN)`: observe the authoritative server returning `NXDOMAIN` with friendly diagnostics.
    - Click preset `bad domain!! (INVALID)`: observe RFC syntax validation error.
-7. **Educational Replay (`/learn`)**:
-   - Open **Protocol Walkthrough**. Step through the real trace replay hop-by-hop with detailed educational explanations.
+7. **Educational Replay & Flag Simulator (`/learn`)**:
+   - Open **Protocol Walkthrough**.
+   - Step through the real trace replay hop-by-hop.
+   - Try the **Interactive RFC 1035 Header Flag Simulator**: click `AA`, `TC`, `RD`, or preset buttons to see the 16-bit binary and hex word calculate live.
 
 ---
 
@@ -305,7 +328,7 @@ Runs over **105 offline unit tests** validating parser logic, validation rules, 
 ```bash
 cd backend
 source .venv/bin/activate
-python -m pytest
+python -m pytest -m "not live"
 ```
 
 ### 2. Live Network Integration Tests
