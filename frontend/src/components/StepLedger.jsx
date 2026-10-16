@@ -39,11 +39,35 @@ function getStepExplanation(step) {
 
 export default function StepLedger({ steps = [], selectedStepIndex, onSelectStep }) {
   const [activeTabPerStep, setActiveTabPerStep] = useState({});
+  const [stepFilter, setStepFilter] = useState("all"); // all | referral | answer | error
+  const [copiedStepIdx, setCopiedStepIdx] = useState(null);
 
   if (!steps || steps.length === 0) return null;
 
   const setTab = (stepIdx, tabName) => {
     setActiveTabPerStep((prev) => ({ ...prev, [stepIdx]: tabName }));
+  };
+
+  const filteredSteps = steps.filter((s) => {
+    if (stepFilter === "referral") return s.response === "REFERRAL";
+    if (stepFilter === "answer") return s.response === "ANSWER";
+    if (stepFilter === "error") return s.response === "TIMEOUT" || s.response === "NETWORK_ERROR" || s.response === "NXDOMAIN" || s.response === "SERVFAIL";
+    return true;
+  });
+
+  const handleCopyStep = (step, idx) => {
+    const text = [
+      `Step ${step.step}: ${step.server_type} (${step.server_name || step.server})`,
+      `Query: ${step.query} IN ${step.record_type}`,
+      `Response: ${step.response} (RCODE: ${step.rcode || "NOERROR"}, AA: ${step.authoritative ? 1 : 0}, TC: ${step.tcp_fallback ? 1 : 0})`,
+      `Latency: ${step.response_time_ms ? step.response_time_ms.toFixed(1) : 0}ms over ${step.transport}/53`,
+      `Answers: ${step.records?.map(r => `${r.name} ${r.ttl} ${r.type} ${r.value}`).join("; ") || "None"}`,
+      `Authority: ${step.authority?.map(r => `${r.name} ${r.ttl} ${r.type} ${r.value}`).join("; ") || "None"}`,
+    ].join("\n");
+
+    navigator.clipboard.writeText(text);
+    setCopiedStepIdx(idx);
+    setTimeout(() => setCopiedStepIdx(null), 1800);
   };
 
   return (
@@ -57,7 +81,7 @@ export default function StepLedger({ steps = [], selectedStepIndex, onSelectStep
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "8px",
+          gap: "10px",
           backgroundColor: "var(--bg-surface)",
         }}
       >
@@ -74,15 +98,57 @@ export default function StepLedger({ steps = [], selectedStepIndex, onSelectStep
             Iterative Query Ledger & Wire Headers
           </span>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <span className="badge badge-periwinkle">EDNS0: 1232 OCTETS</span>
-          <span className="badge badge-muted">RD=0 (ITERATIVE)</span>
+
+        {/* Filter Pills */}
+        <div style={{ display: "flex", gap: "4px", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: "11px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)", marginRight: "4px" }}>
+            FILTER:
+          </span>
+          <button
+            type="button"
+            onClick={() => setStepFilter("all")}
+            className="btn-outline"
+            style={{
+              padding: "2px 8px",
+              fontSize: "11px",
+              backgroundColor: stepFilter === "all" ? "var(--color-primary)" : "transparent",
+              color: stepFilter === "all" ? "#ffffff" : "var(--color-text-main)",
+            }}
+          >
+            All ({steps.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStepFilter("referral")}
+            className="btn-outline"
+            style={{
+              padding: "2px 8px",
+              fontSize: "11px",
+              backgroundColor: stepFilter === "referral" ? "var(--color-primary)" : "transparent",
+              color: stepFilter === "referral" ? "#ffffff" : "var(--color-text-main)",
+            }}
+          >
+            Referrals
+          </button>
+          <button
+            type="button"
+            onClick={() => setStepFilter("answer")}
+            className="btn-outline"
+            style={{
+              padding: "2px 8px",
+              fontSize: "11px",
+              backgroundColor: stepFilter === "answer" ? "var(--color-primary)" : "transparent",
+              color: stepFilter === "answer" ? "#ffffff" : "var(--color-text-main)",
+            }}
+          >
+            Answers
+          </button>
         </div>
       </div>
 
       {/* Step Cards List */}
       <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        {steps.map((step, idx) => {
+        {filteredSteps.map((step, idx) => {
           const isSelected = selectedStepIndex === idx;
           const isTimeout = step.response === "TIMEOUT" || step.response === "NETWORK_ERROR";
           const isAnswer = step.response === "ANSWER";
@@ -105,7 +171,7 @@ export default function StepLedger({ steps = [], selectedStepIndex, onSelectStep
                 border: isSelected
                   ? "2px solid var(--color-primary)"
                   : isTimeout
-                  ? "1px solid var(--color-warning-border)"
+                  ? "1.5px solid var(--color-warning-border)"
                   : "1px solid var(--border-hairline)",
                 borderRadius: "var(--radius-sm)",
                 backgroundColor: isSelected ? "var(--bg-surface-elevated)" : "var(--bg-surface)",
@@ -185,6 +251,18 @@ export default function StepLedger({ steps = [], selectedStepIndex, onSelectStep
                   <span className="badge badge-muted">
                     {step.transport || "UDP"}/53
                   </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyStep(step, idx);
+                    }}
+                    className="btn-outline"
+                    style={{ padding: "2px 6px", fontSize: "10px" }}
+                    title="Copy step telemetry"
+                  >
+                    {copiedStepIdx === idx ? "Copied ✓" : "Copy"}
+                  </button>
                 </div>
               </div>
 

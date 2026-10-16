@@ -105,3 +105,4 @@ export default function AnswerTable({ records = [], domain, recordType }) {
     </div>
   );
 }
+

@@ -96,3 +96,4 @@ export default function LatencyWaterfall({ steps = [], totalTimeMs = 1 }) {
     </div>
   );
 }
+

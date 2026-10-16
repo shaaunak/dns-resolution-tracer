@@ -160,3 +160,4 @@ export default function ErrorCard({ error, onRetry }) {
     </div>
   );
 }
+
