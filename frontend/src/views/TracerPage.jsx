@@ -370,7 +370,7 @@ export default function TracerPage({ onTraceCompleted, lastUserTrace }) {
                   marginBottom: "14px",
                 }}
               >
-                <div style={{ flex: "1 1 280px" }}>
+                <div style={{ flex: "1 1 280px", position: "relative" }}>
                   <input
                     type="text"
                     value={domainInput}
@@ -380,7 +380,7 @@ export default function TracerPage({ onTraceCompleted, lastUserTrace }) {
                     autoCapitalize="none"
                     style={{
                       width: "100%",
-                      padding: "10px 14px",
+                      padding: "10px 36px 10px 14px",
                       fontFamily: "var(--font-mono)",
                       fontSize: "14px",
                       backgroundColor: "#ffffff",
@@ -396,6 +396,27 @@ export default function TracerPage({ onTraceCompleted, lastUserTrace }) {
                       e.target.style.borderColor = "var(--border-hairline)";
                     }}
                   />
+                  {domainInput && (
+                    <button
+                      type="button"
+                      onClick={() => setDomainInput("")}
+                      style={{
+                        position: "absolute",
+                        right: "10px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        color: "var(--color-text-muted)",
+                        cursor: "pointer",
+                        fontSize: "13px",
+                        padding: "2px 6px",
+                      }}
+                      title="Clear domain input"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
 
                 {/* Record Type Buttons */}
@@ -1056,6 +1077,47 @@ export default function TracerPage({ onTraceCompleted, lastUserTrace }) {
               domain={result.domain}
               recordType={result.record_type}
             />
+
+            {/* Interactive dig CLI Equivalent */}
+            <div
+              className="hairline-card"
+              style={{
+                padding: "12px 18px",
+                marginBottom: "24px",
+                backgroundColor: "var(--bg-surface)",
+                border: "1px dashed var(--border-hairline)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "10px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <span className="badge badge-maroon" style={{ fontSize: "10px" }}>
+                  RFC 1035 CLI EQUIVALENT
+                </span>
+                <span style={{ color: "var(--color-text-muted)" }}>Reproduce with dig:</span>
+                <code style={{ color: "var(--color-primary)", fontWeight: 600 }}>
+                  dig +norecurse +edns=0 +bufsize=1232 @{result.steps?.[0]?.server || "198.41.0.4"} {result.domain} {result.record_type}
+                </code>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const cmd = `dig +norecurse +edns=0 +bufsize=1232 @${result.steps?.[0]?.server || "198.41.0.4"} ${result.domain} ${result.record_type}`;
+                  navigator.clipboard.writeText(cmd);
+                  showToast("Copied equivalent dig command to clipboard");
+                }}
+                className="btn-outline"
+                style={{ padding: "3px 10px", fontSize: "11px" }}
+              >
+                Copy dig Command
+              </button>
+            </div>
 
             {/* Latency Waterfall & Time Budget */}
             {!result.cache_hit && (

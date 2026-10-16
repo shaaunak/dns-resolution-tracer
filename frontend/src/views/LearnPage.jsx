@@ -6,7 +6,76 @@ export default function LearnPage({ lastUserTrace }) {
   const steps = activeTrace.steps || [];
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
 
+  // Interactive Flag Bitmask Simulator State
+  const [qr, setQr] = useState(1);
+  const [opcode, setOpcode] = useState(0); // 0 = Standard Query
+  const [aa, setAa] = useState(0);
+  const [tc, setTc] = useState(0);
+  const [rd, setRd] = useState(0);
+  const [ra, setRa] = useState(0);
+  const [rcode, setRcode] = useState(0); // 0 = NOERROR, 3 = NXDOMAIN
+
+  // Compute 16-bit flag word
+  // Bit 15: QR
+  // Bits 14-11: Opcode (4 bits)
+  // Bit 10: AA
+  // Bit 9: TC
+  // Bit 8: RD
+  // Bit 7: RA
+  // Bits 6-4: Z (reserved, 3 bits = 0)
+  // Bits 3-0: RCODE (4 bits)
+  const flagWord =
+    (qr << 15) |
+    ((opcode & 0x0f) << 11) |
+    (aa << 10) |
+    (tc << 9) |
+    (rd << 8) |
+    (ra << 7) |
+    (rcode & 0x0f);
+
+  const hexString = "0x" + flagWord.toString(16).toUpperCase().padStart(4, "0");
+  const binaryString = flagWord.toString(2).padStart(16, "0");
+
   const currentStep = steps[currentStepIdx] || steps[0];
+
+  const applyPreset = (preset) => {
+    if (preset === "query") {
+      setQr(0);
+      setAa(0);
+      setTc(0);
+      setRd(0);
+      setRa(0);
+      setRcode(0);
+    } else if (preset === "referral") {
+      setQr(1);
+      setAa(0);
+      setTc(0);
+      setRd(0);
+      setRa(0);
+      setRcode(0);
+    } else if (preset === "auth_answer") {
+      setQr(1);
+      setAa(1);
+      setTc(0);
+      setRd(0);
+      setRa(0);
+      setRcode(0);
+    } else if (preset === "truncated") {
+      setQr(1);
+      setAa(0);
+      setTc(1);
+      setRd(0);
+      setRa(0);
+      setRcode(0);
+    } else if (preset === "nxdomain") {
+      setQr(1);
+      setAa(1);
+      setTc(0);
+      setRd(0);
+      setRa(0);
+      setRcode(3);
+    }
+  };
 
   return (
     <div style={{ paddingBottom: "80px", paddingTop: "24px" }}>
@@ -99,13 +168,13 @@ export default function LearnPage({ lastUserTrace }) {
               </div>
             </div>
 
-            {/* Replay Hop Card */}
+            {/* Visual Replay Step */}
             <div
               style={{
-                padding: "16px",
-                backgroundColor: "var(--bg-surface-elevated)",
+                backgroundColor: "#ffffff",
                 border: "1px solid var(--border-hairline)",
                 borderRadius: "var(--radius-sm)",
+                padding: "20px",
                 marginBottom: "16px",
               }}
             >
@@ -115,38 +184,36 @@ export default function LearnPage({ lastUserTrace }) {
                   justifyContent: "space-between",
                   alignItems: "center",
                   flexWrap: "wrap",
-                  gap: "8px",
-                  marginBottom: "10px",
+                  gap: "10px",
+                  marginBottom: "12px",
+                  paddingBottom: "12px",
+                  borderBottom: "1px solid var(--border-hairline-subtle)",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span className="badge badge-maroon">
-                    HOP {currentStep.step}: {currentStep.server_type}
+                    {currentStep.server_type}
                   </span>
-                  <span style={{ fontWeight: 600, fontSize: "13px", color: "var(--color-text-main)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "14px", fontWeight: 700, color: "var(--color-primary)" }}>
                     {currentStep.server_name || currentStep.server}
                   </span>
-                  <span style={{ color: "var(--color-text-muted)", fontSize: "12px", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-text-muted)" }}>
                     [{currentStep.server}]
                   </span>
                 </div>
 
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <span className="badge badge-periwinkle">
-                    +{currentStep.response_time_ms ? `${currentStep.response_time_ms.toFixed(1)}ms` : "0ms"}
-                  </span>
-                  <span className="badge badge-muted">
-                    {currentStep.transport}/53
-                  </span>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-text-muted)" }}>
+                  RTT: <strong style={{ color: "var(--color-primary)" }}>{currentStep.response_time_ms ? `${currentStep.response_time_ms.toFixed(1)} ms` : "0 ms"}</strong> via {currentStep.transport}/53
                 </div>
               </div>
 
+              {/* Step Narrative */}
               <div
                 style={{
                   fontSize: "13px",
-                  color: "var(--color-text-main)",
                   lineHeight: 1.6,
-                  padding: "12px",
+                  color: "var(--color-text-main)",
+                  padding: "14px",
                   backgroundColor: "var(--bg-surface-recessed)",
                   borderRadius: "var(--radius-xs)",
                   marginBottom: "14px",
@@ -166,7 +233,7 @@ export default function LearnPage({ lastUserTrace }) {
                   <p>
                     <strong>TLD Query:</strong> Following the referral, the resolver queried TLD server{" "}
                     <code>{currentStep.server_name}</code> for <code>{currentStep.query}</code>. The TLD server responded with a
-                    referral delegating the domain to Google's authoritative nameservers (
+                    referral delegating the domain to authoritative nameservers (
                     {currentStep.authority?.map((a) => a.value).join(", ")}).
                   </p>
                 )}
@@ -219,6 +286,257 @@ export default function LearnPage({ lastUserTrace }) {
         )}
 
         {/* ------------------------------------------------------------------
+            INTERACTIVE RFC 1035 HEADER FLAGS PLAYGROUND
+            ------------------------------------------------------------------ */}
+        <section style={{ marginBottom: "48px" }}>
+          <div style={{ marginBottom: "16px" }}>
+            <span className="badge badge-maroon" style={{ marginBottom: "6px" }}>
+              INTERACTIVE PROTOCOL LAB
+            </span>
+            <h2
+              className="font-serif"
+              style={{
+                fontSize: "24px",
+                fontWeight: 600,
+                color: "var(--color-primary)",
+                marginBottom: "6px",
+              }}
+            >
+              Interactive RFC 1035 Header Flag Simulator
+            </h2>
+            <p style={{ color: "var(--color-text-muted)", fontSize: "13px" }}>
+              Toggle the 16-bit header control flags below to observe how DNS wire packets encode queries, referrals, authoritative answers, and truncation.
+            </p>
+          </div>
+
+          <div
+            className="hairline-card"
+            style={{
+              padding: "20px",
+              backgroundColor: "#ffffff",
+              border: "1.5px solid var(--color-primary)",
+            }}
+          >
+            {/* Presets */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "16px" }}>
+              <span style={{ fontSize: "11px", fontFamily: "var(--font-mono)", color: "var(--color-text-muted)" }}>
+                PACKET PRESETS:
+              </span>
+              <button
+                type="button"
+                onClick={() => applyPreset("query")}
+                className="btn-outline"
+                style={{ padding: "2px 8px", fontSize: "11px" }}
+              >
+                Standard Iterative Query (RD=0)
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset("referral")}
+                className="btn-outline"
+                style={{ padding: "2px 8px", fontSize: "11px" }}
+              >
+                Root/TLD Referral Reply
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset("auth_answer")}
+                className="btn-outline"
+                style={{ padding: "2px 8px", fontSize: "11px" }}
+              >
+                Authoritative Answer (AA=1)
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset("truncated")}
+                className="btn-outline"
+                style={{ padding: "2px 8px", fontSize: "11px" }}
+              >
+                Truncated Response (TC=1)
+              </button>
+              <button
+                type="button"
+                onClick={() => applyPreset("nxdomain")}
+                className="btn-outline"
+                style={{ padding: "2px 8px", fontSize: "11px" }}
+              >
+                NXDOMAIN Negative Reply (RCODE=3)
+              </button>
+            </div>
+
+            {/* Interactive Flag Switches */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                gap: "10px",
+                marginBottom: "20px",
+              }}
+            >
+              {/* QR */}
+              <div
+                onClick={() => setQr((q) => (q === 1 ? 0 : 1))}
+                style={{
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: `1.5px solid ${qr ? "var(--color-primary)" : "var(--border-hairline)"}`,
+                  backgroundColor: qr ? "var(--color-primary-tint)" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: "var(--color-primary)" }}>
+                  QR: {qr}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  {qr === 1 ? "Response" : "Query"}
+                </div>
+              </div>
+
+              {/* AA */}
+              <div
+                onClick={() => setAa((a) => (a === 1 ? 0 : 1))}
+                style={{
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: `1.5px solid ${aa ? "var(--color-success)" : "var(--border-hairline)"}`,
+                  backgroundColor: aa ? "var(--color-success-bg)" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: aa ? "var(--color-success)" : "var(--color-text-main)" }}>
+                  AA: {aa}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  {aa === 1 ? "Authoritative" : "Referral/Non-Auth"}
+                </div>
+              </div>
+
+              {/* TC */}
+              <div
+                onClick={() => setTc((t) => (t === 1 ? 0 : 1))}
+                style={{
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: `1.5px solid ${tc ? "var(--color-warning)" : "var(--border-hairline)"}`,
+                  backgroundColor: tc ? "var(--color-warning-bg)" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: tc ? "var(--color-warning)" : "var(--color-text-main)" }}>
+                  TC: {tc}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  {tc === 1 ? "Truncated (TCP Fallback)" : "Clean UDP (<1232B)"}
+                </div>
+              </div>
+
+              {/* RD */}
+              <div
+                onClick={() => setRd((r) => (r === 1 ? 0 : 1))}
+                style={{
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: `1.5px solid ${rd ? "var(--color-primary)" : "var(--border-hairline)"}`,
+                  backgroundColor: rd ? "var(--color-primary-tint)" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: "var(--color-primary)" }}>
+                  RD: {rd}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  {rd === 1 ? "Recursion Desired" : "RD=0 (Iterative)"}
+                </div>
+              </div>
+
+              {/* RA */}
+              <div
+                onClick={() => setRa((r) => (r === 1 ? 0 : 1))}
+                style={{
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: `1.5px solid ${ra ? "var(--color-primary)" : "var(--border-hairline)"}`,
+                  backgroundColor: ra ? "var(--color-primary-tint)" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: "var(--color-primary)" }}>
+                  RA: {ra}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  {ra === 1 ? "Recursion Avail" : "No Recursion"}
+                </div>
+              </div>
+
+              {/* RCODE */}
+              <div
+                onClick={() => setRcode((rc) => (rc === 0 ? 3 : rc === 3 ? 2 : 0))}
+                style={{
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: `1.5px solid ${rcode !== 0 ? "var(--color-error)" : "var(--border-hairline)"}`,
+                  backgroundColor: rcode !== 0 ? "var(--color-error-bg)" : "var(--bg-surface)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: rcode !== 0 ? "var(--color-error)" : "var(--color-primary)" }}>
+                  RCODE: {rcode}
+                </div>
+                <div style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>
+                  {rcode === 0 ? "NOERROR" : rcode === 3 ? "NXDOMAIN" : "SERVFAIL"}
+                </div>
+              </div>
+            </div>
+
+            {/* Wire Word Output Display */}
+            <div
+              style={{
+                padding: "14px 18px",
+                backgroundColor: "var(--bg-surface-recessed)",
+                borderRadius: "var(--radius-sm)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "12px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "12px",
+              }}
+            >
+              <div>
+                <span style={{ color: "var(--color-text-muted)", marginRight: "8px" }}>
+                  HEX VALUE:
+                </span>
+                <strong style={{ fontSize: "15px", color: "var(--color-primary)" }}>
+                  {hexString}
+                </strong>
+              </div>
+
+              <div>
+                <span style={{ color: "var(--color-text-muted)", marginRight: "8px" }}>
+                  16-BIT BINARY:
+                </span>
+                <span style={{ letterSpacing: "0.08em", color: "var(--color-text-main)", fontWeight: 600 }}>
+                  {binaryString.slice(0, 4)} {binaryString.slice(4, 8)} {binaryString.slice(8, 12)} {binaryString.slice(12, 16)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------------------------------------------
             CORE ARCHITECTURAL CONCEPTS
             ------------------------------------------------------------------ */}
         <section style={{ marginBottom: "48px" }}>
@@ -236,7 +554,7 @@ export default function LearnPage({ lastUserTrace }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
             {/* 1. Root Hints */}
-            <div className="hairline-card" style={{ padding: "20px" }}>
+            <div className="hairline-card" style={{ padding: "20px", backgroundColor: "#ffffff" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-primary)", marginBottom: "8px" }}>
                 1. Root Hints & Bootstrap
               </h3>
@@ -249,7 +567,7 @@ export default function LearnPage({ lastUserTrace }) {
             </div>
 
             {/* 2. Zone Delegation & Referrals */}
-            <div className="hairline-card" style={{ padding: "20px" }}>
+            <div className="hairline-card" style={{ padding: "20px", backgroundColor: "#ffffff" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-primary)", marginBottom: "8px" }}>
                 2. Zone Delegation & Referrals
               </h3>
@@ -262,7 +580,7 @@ export default function LearnPage({ lastUserTrace }) {
             </div>
 
             {/* 3. In-Bailiwick Glue Records */}
-            <div className="hairline-card" style={{ padding: "20px" }}>
+            <div className="hairline-card" style={{ padding: "20px", backgroundColor: "#ffffff" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-primary)", marginBottom: "8px" }}>
                 3. Glue Records & Bailiwick
               </h3>
@@ -275,7 +593,7 @@ export default function LearnPage({ lastUserTrace }) {
             </div>
 
             {/* 4. CNAME Aliasing */}
-            <div className="hairline-card" style={{ padding: "20px" }}>
+            <div className="hairline-card" style={{ padding: "20px", backgroundColor: "#ffffff" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-primary)", marginBottom: "8px" }}>
                 4. CNAME Aliasing & Recursion Limits
               </h3>
@@ -288,7 +606,7 @@ export default function LearnPage({ lastUserTrace }) {
             </div>
 
             {/* 5. Transport & TCP Fallback */}
-            <div className="hairline-card" style={{ padding: "20px" }}>
+            <div className="hairline-card" style={{ padding: "20px", backgroundColor: "#ffffff" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-primary)", marginBottom: "8px" }}>
                 5. Transport & TCP Fallback
               </h3>
@@ -301,7 +619,7 @@ export default function LearnPage({ lastUserTrace }) {
             </div>
 
             {/* 6. Application Caching */}
-            <div className="hairline-card" style={{ padding: "20px" }}>
+            <div className="hairline-card" style={{ padding: "20px", backgroundColor: "#ffffff" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-primary)", marginBottom: "8px" }}>
                 6. TTL & Application Caching
               </h3>
@@ -336,7 +654,7 @@ export default function LearnPage({ lastUserTrace }) {
             </p>
           </div>
 
-          <div className="dns-table-wrapper">
+          <div className="dns-table-wrapper" style={{ backgroundColor: "#ffffff" }}>
             <table className="dns-table">
               <thead>
                 <tr>
@@ -398,4 +716,3 @@ export default function LearnPage({ lastUserTrace }) {
     </div>
   );
 }
-

@@ -128,12 +128,16 @@ function SceneContent({ activeTrace, onHoverNode }) {
     };
   }, [rootNodes, tldNodes, authNodes]);
 
-  // Packet animation loop
+  // Packet animation loop & gentle mouse parallax orbit
   useFrame((state) => {
     const t = (state.clock.getElapsedTime() * 0.35) % 1;
     if (packetRef.current && activePathPoints.curve) {
       const pos = activePathPoints.curve.getPointAt(t);
       packetRef.current.position.copy(pos);
+    }
+    if (groupRef.current) {
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, state.pointer.x * 0.24, 0.06);
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -state.pointer.y * 0.14, 0.06);
     }
   });
 

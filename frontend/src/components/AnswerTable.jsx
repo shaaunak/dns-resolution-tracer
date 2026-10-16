@@ -2,11 +2,20 @@ import React, { useState } from "react";
 
 export default function AnswerTable({ records = [], domain, recordType }) {
   const [copiedIdx, setCopiedIdx] = useState(null);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [filterQuery, setFilterQuery] = useState("");
 
   const copyValue = (val, idx) => {
     navigator.clipboard.writeText(val);
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 1800);
+  };
+
+  const copyAll = () => {
+    const text = records.map((r) => `${r.name}\t${r.ttl}\tIN\t${r.type}\t${r.value}`).join("\n");
+    navigator.clipboard.writeText(text);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 1800);
   };
 
   if (!records || records.length === 0) {
@@ -20,6 +29,7 @@ export default function AnswerTable({ records = [], domain, recordType }) {
           color: "var(--color-text-muted)",
           fontFamily: "var(--font-mono)",
           fontSize: "12px",
+          backgroundColor: "#ffffff",
         }}
       >
         No answer records returned for {domain} ({recordType}). Check step referral ledger below.
@@ -27,8 +37,15 @@ export default function AnswerTable({ records = [], domain, recordType }) {
     );
   }
 
+  const filteredRecords = records.filter(
+    (r) =>
+      r.value.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      r.name.toLowerCase().includes(filterQuery.toLowerCase()) ||
+      r.type.toLowerCase().includes(filterQuery.toLowerCase())
+  );
+
   return (
-    <div className="hairline-card" style={{ marginBottom: "24px", overflow: "hidden" }}>
+    <div className="hairline-card" style={{ marginBottom: "24px", overflow: "hidden", backgroundColor: "#ffffff" }}>
       {/* Header Strip */}
       <div
         style={{
@@ -37,6 +54,8 @@ export default function AnswerTable({ records = [], domain, recordType }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px",
           backgroundColor: "var(--bg-surface)",
         }}
       >
@@ -52,10 +71,39 @@ export default function AnswerTable({ records = [], domain, recordType }) {
           >
             Validated Authoritative Answer
           </span>
+          <span className="badge badge-periwinkle" style={{ fontSize: "10px" }}>
+            SECTION: ANSWER ({records.length})
+          </span>
         </div>
-        <span className="badge badge-periwinkle">
-          SECTION: ANSWER ({records.length})
-        </span>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {records.length > 2 && (
+            <input
+              type="text"
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              placeholder="Filter records..."
+              style={{
+                padding: "3px 8px",
+                fontSize: "11px",
+                fontFamily: "var(--font-mono)",
+                border: "1px solid var(--border-hairline)",
+                borderRadius: "var(--radius-xs)",
+                outline: "none",
+                width: "130px",
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={copyAll}
+            className="btn-outline"
+            style={{ padding: "3px 10px", fontSize: "11px" }}
+          >
+            {copiedAll ? "Copied All ✓" : "Copy All Records"}
+          </button>
+        </div>
       </div>
 
       {/* Table */}
@@ -72,19 +120,21 @@ export default function AnswerTable({ records = [], domain, recordType }) {
             </tr>
           </thead>
           <tbody>
-            {records.map((rec, idx) => (
+            {filteredRecords.map((rec, idx) => (
               <tr key={idx}>
-                <td style={{ color: "var(--color-primary)", fontWeight: 500 }}>
+                <td style={{ color: "var(--color-primary)", fontWeight: 500, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
                   {rec.name}
                 </td>
-                <td style={{ color: "var(--color-text-muted)" }}>IN</td>
+                <td style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px" }}>IN</td>
                 <td>
-                  <span className="badge badge-maroon" style={{ padding: "1px 6px" }}>
+                  <span className="badge badge-maroon" style={{ padding: "1px 6px", fontSize: "11px" }}>
                     {rec.type}
                   </span>
                 </td>
-                <td style={{ color: "var(--color-text-muted)" }}>{rec.ttl}s</td>
-                <td style={{ fontWeight: 600, color: "var(--color-text-main)" }}>
+                <td style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+                  {rec.ttl}s
+                </td>
+                <td style={{ fontWeight: 600, color: "var(--color-text-main)", fontFamily: "var(--font-mono)", fontSize: "13px" }}>
                   {rec.value}
                 </td>
                 <td style={{ textAlign: "right" }}>
@@ -93,6 +143,7 @@ export default function AnswerTable({ records = [], domain, recordType }) {
                     onClick={() => copyValue(rec.value, idx)}
                     className="btn-outline"
                     style={{ padding: "2px 8px", fontSize: "10px" }}
+                    title="Copy record value to clipboard"
                   >
                     {copiedIdx === idx ? "Copied ✓" : "Copy"}
                   </button>
@@ -105,4 +156,3 @@ export default function AnswerTable({ records = [], domain, recordType }) {
     </div>
   );
 }
-

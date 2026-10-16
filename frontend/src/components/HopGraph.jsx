@@ -8,6 +8,7 @@ export default function HopGraph({
   finalAnswer = [],
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showWireDetails, setShowWireDetails] = useState(false);
   const playTimerRef = useRef(null);
 
   if (!steps || steps.length === 0) return null;
@@ -33,7 +34,7 @@ export default function HopGraph({
         }
         return next;
       });
-    }, 1400);
+    }, 1500);
 
     return () => {
       if (playTimerRef.current) clearInterval(playTimerRef.current);
@@ -45,6 +46,14 @@ export default function HopGraph({
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+  };
+
+  const getTierIcon = (serverType, isCache) => {
+    if (isCache) return "⚡";
+    if (serverType === "ROOT") return "🌐";
+    if (serverType === "TLD") return "📁";
+    if (serverType === "AUTHORITATIVE") return "🛡️";
+    return "⇄";
   };
 
   return (
@@ -86,9 +95,17 @@ export default function HopGraph({
               }
             }}
             className="btn-outline"
-            style={{ padding: "3px 8px", fontSize: "11px", display: "inline-flex", alignItems: "center", gap: "4px" }}
+            style={{
+              padding: "4px 10px",
+              fontSize: "11px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              backgroundColor: isPlaying ? "var(--color-primary-tint)" : "transparent",
+              borderColor: isPlaying ? "var(--color-primary)" : "var(--border-hairline)",
+            }}
           >
-            <span>{isPlaying ? "⏸ Pause" : "▶ Play Walkthrough"}</span>
+            <span>{isPlaying ? "⏸ Pause Tour" : "▶ Play Walkthrough"}</span>
           </button>
 
           <button
@@ -96,7 +113,7 @@ export default function HopGraph({
             disabled={activeIndex <= 0}
             onClick={() => onSelectStep(Math.max(activeIndex - 1, 0))}
             className="btn-outline"
-            style={{ padding: "3px 8px", fontSize: "11px" }}
+            style={{ padding: "4px 9px", fontSize: "11px" }}
             title="Previous Hop"
           >
             ←
@@ -107,10 +124,25 @@ export default function HopGraph({
             disabled={activeIndex >= steps.length - 1}
             onClick={() => onSelectStep(Math.min(activeIndex + 1, steps.length - 1))}
             className="btn-outline"
-            style={{ padding: "3px 8px", fontSize: "11px" }}
+            style={{ padding: "4px 9px", fontSize: "11px" }}
             title="Next Hop"
           >
             →
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowWireDetails(!showWireDetails)}
+            className="btn-outline"
+            style={{
+              padding: "4px 10px",
+              fontSize: "11px",
+              backgroundColor: showWireDetails ? "var(--color-secondary-tint)" : "transparent",
+              color: showWireDetails ? "var(--color-secondary-dark)" : "var(--color-text-main)",
+            }}
+            title="Toggle RFC header flags view"
+          >
+            {showWireDetails ? "Hide RFC Flags" : "Show RFC Flags"}
           </button>
         </div>
       </div>
@@ -119,10 +151,10 @@ export default function HopGraph({
       <div
         style={{
           overflowX: "auto",
-          padding: "18px 18px 20px 18px",
+          padding: "20px 18px 22px 18px",
           display: "flex",
           alignItems: "center",
-          gap: "12px",
+          gap: "10px",
           scrollbarWidth: "thin",
         }}
       >
@@ -142,9 +174,9 @@ export default function HopGraph({
                   onSelectStep(idx);
                 }}
                 style={{
-                  flex: "0 0 205px",
-                  minWidth: "205px",
-                  maxWidth: "235px",
+                  flex: "0 0 215px",
+                  minWidth: "215px",
+                  maxWidth: "245px",
                   backgroundColor: isSelected
                     ? "var(--bg-surface-elevated)"
                     : "var(--bg-surface)",
@@ -158,11 +190,11 @@ export default function HopGraph({
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   cursor: "pointer",
-                  transition: "all 0.15s ease",
+                  transition: "transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease",
                   boxShadow: isSelected
-                    ? "0 4px 14px rgba(91, 0, 21, 0.12)"
+                    ? "0 6px 16px rgba(91, 0, 21, 0.14)"
                     : "var(--shadow-sm)",
-                  transform: isSelected ? "translateY(-2px)" : "none",
+                  transform: isSelected ? "translateY(-3px)" : "none",
                   position: "relative",
                 }}
               >
@@ -171,7 +203,7 @@ export default function HopGraph({
                   <div
                     style={{
                       position: "absolute",
-                      top: "-8px",
+                      top: "-9px",
                       left: "50%",
                       transform: "translateX(-50%)",
                       backgroundColor: "var(--color-primary)",
@@ -179,9 +211,10 @@ export default function HopGraph({
                       fontSize: "9px",
                       fontWeight: 700,
                       fontFamily: "var(--font-mono)",
-                      padding: "1px 6px",
+                      padding: "2px 8px",
                       borderRadius: "var(--radius-pill)",
-                      letterSpacing: "0.04em",
+                      letterSpacing: "0.06em",
+                      boxShadow: "0 2px 6px rgba(91, 0, 21, 0.25)",
                     }}
                   >
                     INSPECTING
@@ -198,20 +231,9 @@ export default function HopGraph({
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span
-                      style={{
-                        width: "7px",
-                        height: "7px",
-                        borderRadius: "50%",
-                        backgroundColor: isCache
-                          ? "var(--color-secondary-dark)"
-                          : isTimeout
-                          ? "var(--color-error)"
-                          : isAnswer
-                          ? "var(--color-success)"
-                          : "var(--color-primary)",
-                      }}
-                    />
+                    <span style={{ fontSize: "12px" }}>
+                      {getTierIcon(step.server_type, isCache)}
+                    </span>
                     <span
                       style={{
                         fontFamily: "var(--font-mono)",
@@ -307,20 +329,40 @@ export default function HopGraph({
                 </div>
               </div>
 
-              {/* Directional Connector Arrow */}
+              {/* Animated Directional SVG Connector */}
               {idx < steps.length - 1 && (
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    color: "var(--color-secondary-dark)",
-                    fontSize: "16px",
-                    fontWeight: "bold",
+                    justifyContent: "center",
+                    width: "36px",
                     flexShrink: 0,
-                    padding: "0 2px",
                   }}
                 >
-                  →
+                  <svg width="36" height="14" viewBox="0 0 36 14" style={{ overflow: "visible" }}>
+                    <line
+                      x1="2"
+                      y1="7"
+                      x2="30"
+                      y2="7"
+                      stroke="var(--color-secondary-border)"
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                    />
+                    <polygon
+                      points="28,3 36,7 28,11"
+                      fill="var(--color-secondary-dark)"
+                    />
+                    <circle cx="8" cy="7" r="2.5" fill="var(--color-primary)">
+                      <animate
+                        attributeName="cx"
+                        values="4;32;4"
+                        dur="1.8s"
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                  </svg>
                 </div>
               )}
             </React.Fragment>
@@ -334,20 +376,31 @@ export default function HopGraph({
               style={{
                 display: "flex",
                 alignItems: "center",
-                color: "var(--color-success)",
-                fontSize: "16px",
-                fontWeight: "bold",
+                justifyContent: "center",
+                width: "36px",
                 flexShrink: 0,
-                padding: "0 2px",
               }}
             >
-              →
+              <svg width="36" height="14" viewBox="0 0 36 14" style={{ overflow: "visible" }}>
+                <line
+                  x1="2"
+                  y1="7"
+                  x2="30"
+                  y2="7"
+                  stroke="var(--color-success-border)"
+                  strokeWidth="1.5"
+                />
+                <polygon
+                  points="28,3 36,7 28,11"
+                  fill="var(--color-success)"
+                />
+              </svg>
             </div>
 
             <div
               style={{
-                flex: "0 0 185px",
-                minWidth: "185px",
+                flex: "0 0 195px",
+                minWidth: "195px",
                 backgroundColor: "var(--color-success-bg)",
                 border: "1.5px solid var(--color-success-border)",
                 borderRadius: "var(--radius-sm)",
@@ -404,46 +457,99 @@ export default function HopGraph({
             padding: "14px 18px",
             backgroundColor: "var(--bg-surface-elevated)",
             borderTop: "1px solid var(--border-hairline)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "12px",
             fontSize: "12px",
             fontFamily: "var(--font-mono)",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <span className="badge badge-maroon">
-              HOP {activeStep.step} INSPECTION
-            </span>
-            <span>
-              <strong>Server:</strong> {activeStep.server_name || "Unknown"} ({activeStep.server})
-            </span>
-            <span style={{ color: "var(--border-hairline)" }}>•</span>
-            <span>
-              <strong>Response:</strong> {activeStep.response} ({activeStep.rcode || "NOERROR"})
-            </span>
-            <span style={{ color: "var(--border-hairline)" }}>•</span>
-            <span>
-              <strong>Round-Trip:</strong> {activeStep.response_time_ms ? `${activeStep.response_time_ms.toFixed(1)}ms` : "0ms"}
-            </span>
-            <span style={{ color: "var(--border-hairline)" }}>•</span>
-            <span>
-              <strong>Authority Records:</strong> {activeStep.authority?.length || 0} NS
-            </span>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "12px",
+              marginBottom: showWireDetails ? "12px" : "0",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <span className="badge badge-maroon">
+                HOP {activeStep.step} INSPECTION
+              </span>
+              <span>
+                <strong>Server:</strong> {activeStep.server_name || "Unknown"} ({activeStep.server})
+              </span>
+              <span style={{ color: "var(--border-hairline)" }}>•</span>
+              <span>
+                <strong>Response:</strong> {activeStep.response} ({activeStep.rcode || "NOERROR"})
+              </span>
+              <span style={{ color: "var(--border-hairline)" }}>•</span>
+              <span>
+                <strong>Round-Trip:</strong> {activeStep.response_time_ms ? `${activeStep.response_time_ms.toFixed(1)}ms` : "0ms"}
+              </span>
+              <span style={{ color: "var(--border-hairline)" }}>•</span>
+              <span>
+                <strong>Delegations:</strong> {activeStep.authority?.length || 0} NS
+              </span>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => handleScrollToLedger(activeIndex)}
+                className="btn-outline"
+                style={{ fontSize: "11px", padding: "4px 10px" }}
+              >
+                View in Wire Ledger ↓
+              </button>
+            </div>
           </div>
 
-          <div>
-            <button
-              type="button"
-              onClick={() => handleScrollToLedger(activeIndex)}
-              className="btn-outline"
-              style={{ fontSize: "11px", padding: "4px 10px" }}
+          {/* Expanded RFC Wire Flags Drawer */}
+          {showWireDetails && (
+            <div
+              style={{
+                marginTop: "10px",
+                paddingTop: "10px",
+                borderTop: "1px dashed var(--border-hairline)",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                alignItems: "center",
+              }}
             >
-              View in Wire Ledger ↓
-            </button>
-          </div>
+              <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
+                RFC 1035 HEADER FLAGS:
+              </span>
+              <span className="badge badge-muted" title="Query/Response: 1 = Response packet">
+                QR: 1
+              </span>
+              <span
+                className={`badge ${activeStep.authoritative ? "badge-success" : "badge-muted"}`}
+                title="Authoritative Answer: 1 = Server is authoritative for this zone"
+              >
+                AA: {activeStep.authoritative ? "1 (Auth)" : "0 (Referral)"}
+              </span>
+              <span
+                className={`badge ${activeStep.tcp_fallback ? "badge-warning" : "badge-muted"}`}
+                title="Truncation Flag: 1 = UDP packet exceeded 1232B buffer, retried over TCP"
+              >
+                TC: {activeStep.tcp_fallback ? "1 (Truncated)" : "0"}
+              </span>
+              <span className="badge badge-muted" title="Recursion Desired: 0 = Iterative resolution requested">
+                RD: 0
+              </span>
+              <span className="badge badge-muted" title="Recursion Available: Typically 0 on authoritative servers">
+                RA: 0
+              </span>
+              <span className="badge badge-periwinkle" title="Response Code: 0 = NOERROR">
+                RCODE: {activeStep.rcode || "NOERROR"}
+              </span>
+              <span style={{ color: "var(--border-hairline)" }}>|</span>
+              <span style={{ fontSize: "11px", color: "var(--color-primary)" }}>
+                Transport: {activeStep.transport || "UDP"}/53 • EDNS0: 1232 octets
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

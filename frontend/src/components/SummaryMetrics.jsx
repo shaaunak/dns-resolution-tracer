@@ -31,6 +31,12 @@ export default function SummaryMetrics({ traceResult }) {
       ? latencies.reduce((a, b) => a + b, 0) / latencies.length
       : 0;
 
+  // TTL Ring calculation
+  const radius = 16;
+  const circumference = 2 * Math.PI * radius;
+  const ttlProgress = initialTtl > 0 ? Math.max(secondsRemaining / initialTtl, 0) : 0;
+  const strokeDashoffset = circumference - ttlProgress * circumference;
+
   return (
     <div
       style={{
@@ -41,7 +47,14 @@ export default function SummaryMetrics({ traceResult }) {
       }}
     >
       {/* 1. Total Resolution Time */}
-      <div className="hairline-card" style={{ padding: "18px 20px" }}>
+      <div
+        className="hairline-card"
+        style={{
+          padding: "18px 20px",
+          backgroundColor: "#ffffff",
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -86,16 +99,23 @@ export default function SummaryMetrics({ traceResult }) {
         <div style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
           {cache_hit ? (
             <span style={{ color: "var(--color-success)", fontWeight: 600 }}>
-              ✓ Served from our in-memory cache
+              ✓ Served from local process memory
             </span>
           ) : (
-            <span>Iterative wire traversal</span>
+            <span>Iterative root-to-leaf traversal</span>
           )}
         </div>
       </div>
 
       {/* 2. DNS Queries Sent */}
-      <div className="hairline-card" style={{ padding: "18px 20px" }}>
+      <div
+        className="hairline-card"
+        style={{
+          padding: "18px 20px",
+          backgroundColor: "#ffffff",
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -143,7 +163,14 @@ export default function SummaryMetrics({ traceResult }) {
       </div>
 
       {/* 3. Average Query Latency */}
-      <div className="hairline-card" style={{ padding: "18px 20px" }}>
+      <div
+        className="hairline-card"
+        style={{
+          padding: "18px 20px",
+          backgroundColor: "#ffffff",
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -192,8 +219,15 @@ export default function SummaryMetrics({ traceResult }) {
         </div>
       </div>
 
-      {/* 4. Returned TTL with live countdown */}
-      <div className="hairline-card" style={{ padding: "18px 20px" }}>
+      {/* 4. Returned TTL with Animated SVG Countdown Ring */}
+      <div
+        className="hairline-card"
+        style={{
+          padding: "18px 20px",
+          backgroundColor: "#ffffff",
+          transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -214,7 +248,30 @@ export default function SummaryMetrics({ traceResult }) {
           >
             RETURNED TTL
           </span>
-          <span style={{ color: "var(--color-primary)", fontSize: "14px" }}>⏳</span>
+          {/* Animated SVG Countdown Ring */}
+          <svg width="24" height="24" viewBox="0 0 36 36">
+            <circle
+              cx="18"
+              cy="18"
+              r={radius}
+              fill="transparent"
+              stroke="var(--bg-surface-recessed)"
+              strokeWidth="3.5"
+            />
+            <circle
+              cx="18"
+              cy="18"
+              r={radius}
+              fill="transparent"
+              stroke={secondsRemaining < 30 ? "var(--color-error)" : "var(--color-primary)"}
+              strokeWidth="3.5"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              transform="rotate(-90 18 18)"
+              style={{ transition: "stroke-dashoffset 1s linear" }}
+            />
+          </svg>
         </div>
 
         <div style={{ display: "flex", alignItems: "baseline", gap: "6px", marginBottom: "6px" }}>
@@ -237,7 +294,7 @@ export default function SummaryMetrics({ traceResult }) {
 
         <div style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>
           {secondsRemaining === 0 ? (
-            <span style={{ color: "var(--color-error)" }}>Expired from cache</span>
+            <span style={{ color: "var(--color-error)", fontWeight: 600 }}>Expired from app cache</span>
           ) : (
             <span>Live cache expiration countdown</span>
           )}
@@ -246,4 +303,3 @@ export default function SummaryMetrics({ traceResult }) {
     </div>
   );
 }
-
